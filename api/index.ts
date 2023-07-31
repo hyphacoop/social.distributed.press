@@ -108,6 +108,79 @@ const v1Routes = (cfg: APIConfig, store: StoreI) => async (server: FastifyTypebo
     })
   }
 
+	// Get global list of blocked users/instances as newline delimited string
+  server.get('/blocklist', async (request, reply) => {})
+  // Add to the list, newline delimted list in body
+  server.post('/blocklist', async (request, reply) => {})
+  // Remove from list, newline delimited body
+  server.delete('/blocklist', async (request, reply) => {})
+
+	// Get global list of auto-approved instances and users, newline delimited string
+  server.get('/allowlist', async (request, reply) => {})
+  // Add to the list, newline delimted list in body
+  server.post('/allowlist', async (request, reply) => {})
+  // Remove from list, newline delimited body
+  server.delete('/allowlist', async (request, reply) => {})
+
+	// Create a new inbox
+	// Should have auth from DP server?
+  server.post('/:domain/', async (request, reply) => {})
+  // Get info about the domain like the public key and configuration settings
+  server.get('/:domain/', async (request, reply) => {})
+
+	// Returns an JSON-LD OrderedCollection with items in the moderation queue
+	// Follows / Boosts/ Replies / etc will all be mixed in here
+	// Note that items will get auto-denied if they match a user / instance in the blocklist
+	// Likewise items will get auto-accepted if they match the allowlist
+  server.get('/:domain/inbox', async (request, reply) => {})
+  // This is what instances will POST to in order to notify of follows/replies/etc
+  server.post('/:domain/inbox', async (request, reply) => {})
+  // Deny a follow request/boost/etc
+  // The ID is the URL encoded id from the inbox activity
+  server.delete('/:domain/inbox/:id', async (request, reply) => {})
+  // Approve the item from the inbox
+  server.post('/:domain/inbox/:id', async (request,reply) => {})
+
+	// Get list of blocked users/instances as newline delimited string
+  server.get('/:domain/blocklist', async (request, reply) => {})
+  // Add to the list, newline delimted list in body
+  server.post('/:domain/blocklist', async (request, reply) => {})
+  // Remove from list, newline delimited body
+  server.delete('/:domain/blocklist', async (request, reply) => {})
+
+	// Get list of auto-approved instances and users, newline delimited string
+  server.get('/:domain/allowlist', async (request, reply) => {})
+  // Add to the list, newline delimted list in body
+  server.post('/:domain/allowlist', async (request, reply) => {})
+  // Remove from list, newline delimited body
+  server.delete('/:domain/allowlist', async (request, reply) => {})
+
+	// Get list of followers as JSON-LD
+  server.get('/:domain/followers', async (request, reply) => {})
+  // Remove a follower (notifying their server), use URL encoded URL of follower Actor
+  server.delete('/:domain/followers/:follower', async (request, reply) => {})
+
+	// Register hooks for new inbox items that get added to the moderation queue
+	// Hooks are an array of {url, method, headers}
+	// The body will contain the inbox item
+  server.get('/:domain/hooks/onmoderationqueued', async (request, reply) => {})
+  server.delete('/:domain/hooks/onmoderationqueued', async (request, reply) => {})
+  server.put('/:domain/hooks/onmoderationqueued', async (request, reply) => {})
+
+	// Register hooks for new inbox items that get approved
+	// Hooks are an array of {url, method, headers}
+	// The body will contain the inbox item
+  server.get('/:domain/hooks/onnew', async (request, reply) => {})
+  server.delete('/:domain/hooks/onnew', async (request, reply) => {})
+  server.put('/:domain/hooks/onnew', async (request, reply) => {})
+
+	// Register hooks for new inbox items that get rejected
+	// Hooks are an array of {url, method, headers}
+	// The body will contain the inbox item
+  server.get('/:domain/hooks/onrejected', async (request, reply) => {})
+  server.delete('/:domain/hooks/onrejected', async (request, reply) => {})
+  server.put('/:domain/hooks/onrejected', async (request, reply) => {})
+
   // Register Routes
   // await server.register(authRoutes(cfg, store))
 
