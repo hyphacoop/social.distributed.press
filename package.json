@@ -40,6 +40,7 @@
     "@fastify/type-provider-typebox": "^2.4.0",
     "@sinclair/typebox": "^0.25.9",
     "abstract-level": "^1.0.3",
+    "activitypub-types": "^1.0.1",
     "cors": "^2.8.5",
     "dns2": "^2.1.0",
     "env-paths": "^3.0.0",
@@ -84,4 +85,3 @@
     ]
   }
 }
-
