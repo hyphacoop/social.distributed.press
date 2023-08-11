@@ -1,4 +1,6 @@
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
+import signatureParser, { Sha256Signer } from 'activitypub-http-signatures'
+
 import fastify, {
   FastifyBaseLogger,
   RawReplyDefaultExpression,
@@ -10,12 +12,14 @@ import multipart from '@fastify/multipart'
 import swagger from '@fastify/swagger'
 import swagger_ui from '@fastify/swagger-ui'
 import metrics from 'fastify-metrics'
+
 import path from 'node:path'
 import envPaths from 'env-paths'
+
 import { Level } from 'level'
 import { MemoryLevel } from 'memory-level'
 
-import Store, { StoreI } from '../store/index.js'
+import Store from '../store/index.js'
 import { ServerI } from '../index.js'
 
 const paths = envPaths('distributed-press')
@@ -75,7 +79,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   return server
 }
 
-const v1Routes = (cfg: APIConfig, store: StoreI) => async (server: FastifyTypebox): Promise<void> => {
+const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
   if (cfg.usePrometheus ?? false) {
     await server.register(metrics, { endpoint: '/metrics' })
   }
@@ -132,14 +136,89 @@ const v1Routes = (cfg: APIConfig, store: StoreI) => async (server: FastifyTypebo
   // Follows / Boosts/ Replies / etc will all be mixed in here
   // Note that items will get auto-denied if they match a user / instance in the blocklist
   // Likewise items will get auto-accepted if they match the allowlist
-  server.get('/:domain/inbox', async (request, reply) => {})
+  server.get<{
+    Params: {
+      id: string
+    }
+    Reply: Static<typeof Site>
+  }>('/:domain/inbox', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+        200: Type.Any()
+      },
+      description: 'Items in the inbox queue.',
+      tags: ['Publishers']
+    }
+  }, async (request, reply) => {
+    const { domain } = request.params
+    const activities = await store.forDomain(domain).inbox.list()
+    return await reply.send(activities)
+  })
   // This is what instances will POST to in order to notify of follows/replies/etc
-  server.post('/:domain/inbox', async (request, reply) => {})
+  server.post<{
+    Params: {
+      id: string
+    }
+    Reply: Static<typeof Site>
+  }>('/:domain/inbox', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'ActivityPub inbox for your domain.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain } = request.params
+    const { url, method, headers } = request
+    const signature = signatureParser.parse({ url, method, headers })
+    // Get the public key object using the provided key ID
+    const keyRes = await fetch(
+      signature.keyId,
+      {
+        headers: {
+          accept: 'application/ld+json, application/json'
+        }
+      }
+    )
+
+    const { publicKey } = await keyRes.json()
+
+    // Verify the signature
+    const success = signature.verify(
+      publicKey.publicKeyPem // The PEM string from the public key object
+    )
+
+    if (success !== true) {
+    // TODO: Better error
+      throw new Error(`Invalid HTTP signature for ${signature.keyId}`)
+    }
+
+    const activity = request.body
+
+    // TODO: Check blocklist and reject
+    // TODO: Check allowlist and process requests automatically
+
+    await store.forDomain(domain).inbox.add(activity)
+  })
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
-  server.delete('/:domain/inbox/:id', async (request, reply) => {})
+  server.delete('/:domain/inbox/:id', async (request, reply) => {
+    const { domain, id } = request.params
+    await store.forDomain(domain).inbox.remove(id)
+  })
   // Approve the item from the inbox
-  server.post('/:domain/inbox/:id', async (request, reply) => {})
+  server.post('/:domain/inbox/:id', async (request, reply) => {
+    const { domain, id } = request.params
+    // TODO: Handle the type of activity!
+    await store.forDomain(domain).inbox.remove(id)
+  })
 
   // Get list of blocked users/instances as newline delimited string
   server.get('/:domain/blocklist', async (request, reply) => {})

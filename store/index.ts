@@ -2,14 +2,24 @@ import { AbstractLevel } from 'abstract-level'
 import { APIConfig } from '../api/index.js'
 import { APActivity } from 'activitypub-types'
 
+export interface DomainInfo {
+  // The actor for the domain inbox
+  actorURL: string
+  publicKeyId: string
+  privateKeyPEM: string
+  publicKeyPEM: string
+}
+
 export default class Store {
   db: AbstractLevel<any, string, any>
   domains: Map<string, DomainStore>
   domainDB: AbstractLevel<any, string, any>
   blocklist: AccountListStore
   allowlist: AccountListStore
+  config: APIConfig
 
-  constructor (db: AbstractLevel<any, string, any>) {
+  constructor (config: APIConfig, db: AbstractLevel<any, string, any>) {
+    this.config = config
     this.db = db
     this.domains = new Map()
     this.domainDB = this.db.sublevel('domains', { valueEncoding: 'json' })
@@ -26,7 +36,11 @@ export default class Store {
       this.domains.set(domain, store)
     }
 
-    return this.domains.get(domain)
+    const store = this.domains.get(domain)
+    if (store == null) {
+      throw new Error('Domain store not initialixed')
+    }
+    return store
   }
 }
 
@@ -51,6 +65,8 @@ export class DomainStore {
     const followerDb = this.db.sublevel('followers', { valueEncoding: 'json' })
     this.followers = new AccountListStore(followerDb)
   }
+
+  async getInfo
 }
 
 export class InboxStore {
@@ -62,6 +78,7 @@ export class InboxStore {
 
   urlToKey (url: string): string {
     // URL encode the url to clean up the special chars before inserting
+    return encodeURIComponent(url)
   }
 
   async add (url: string, activity: APActivity): Promise<void> {
@@ -75,7 +92,7 @@ export class InboxStore {
 
   async list (): Promise<APActivity[]> {
     // iterate, parse list
-
+    return []
   }
 }
 
@@ -86,16 +103,18 @@ export class AccountListStore {
     this.db = db
   }
 
-  patternToKey (pattern : string): string {
+  patternToKey (pattern: string): string {
   // split into domain and username
   // \x00{domain}\x00{username}
+    return ''
   }
 
-  async matches (username : string): Promise<boolean> {
+  async matches (username: string): Promise<boolean> {
     // split by name and domain
     // make into key
     // check if @*@domain is in the filter
     // check if username key is in filter
+    return false
   }
 
   async add (patterns: string[]): Promise<void> {
@@ -113,5 +132,6 @@ export class AccountListStore {
   }
 
   async list (): Promise<string[]> {
+    return []
   }
 }
