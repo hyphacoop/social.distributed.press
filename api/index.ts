@@ -1,4 +1,8 @@
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
+import { Type, Static } from '@sinclair/typebox'
+
+import { APActivity } from 'activitypub-types'
+
 import signatureParser, { Sha256Signer } from 'activitypub-http-signatures'
 
 import fastify, {
@@ -138,9 +142,9 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   // Likewise items will get auto-accepted if they match the allowlist
   server.get<{
     Params: {
-      id: string
+      domain: string
     }
-    Reply: Static<typeof Site>
+    Reply: APActivity[]
   }>('/:domain/inbox', {
     schema: {
       params: Type.Object({
@@ -160,9 +164,8 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   // This is what instances will POST to in order to notify of follows/replies/etc
   server.post<{
     Params: {
-      id: string
+      domain: string
     }
-    Reply: Static<typeof Site>
   }>('/:domain/inbox', {
     schema: {
       params: Type.Object({
@@ -178,9 +181,10 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
     const { domain } = request.params
     const { url, method, headers } = request
     const signature = signatureParser.parse({ url, method, headers })
+    const { keyId } = signature.keyId
     // Get the public key object using the provided key ID
     const keyRes = await fetch(
-      signature.keyId,
+      keyId,
       {
         headers: {
           accept: 'application/ld+json, application/json'
@@ -197,7 +201,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
 
     if (success !== true) {
     // TODO: Better error
-      throw new Error(`Invalid HTTP signature for ${signature.keyId}`)
+      throw new Error(`Invalid HTTP signature for ${keyId}`)
     }
 
     const activity = request.body
