@@ -117,18 +117,44 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   }
 
   // Get global list of blocked users/instances as newline delimited string
-  server.get('/blocklist', async (request, reply) => {})
+  server.get('/blocklist', async (request, reply) => {
+    const blockedAccounts = await store.blocklist.list();
+    reply.send(blockedAccounts.join('\n'));
+  });
+
   // Add to the list, newline delimted list in body
-  server.post('/blocklist', async (request, reply) => {})
+  server.post('/blocklist', async (request, reply) => {
+    const accounts = (request.body as string).split('\n');
+    await store.blocklist.add(accounts);
+    reply.send({ message: 'Added successfully' });
+  });
+  
   // Remove from list, newline delimited body
-  server.delete('/blocklist', async (request, reply) => {})
+  server.delete('/blocklist', async (request, reply) => {
+    const accounts = (request.body as string).split('\n');
+    await store.blocklist.remove(accounts);
+    reply.send({ message: 'Removed successfully' });
+  });
 
   // Get global list of auto-approved instances and users, newline delimited string
-  server.get('/allowlist', async (request, reply) => {})
+  server.get('/allowlist', async (request, reply) => {
+    const allowedAccounts = await store.allowlist.list();
+    reply.send(allowedAccounts.join('\n'));
+  });
+
   // Add to the list, newline delimted list in body
-  server.post('/allowlist', async (request, reply) => {})
+  server.post('/allowlist', async (request, reply) => {
+    const accounts = (request.body as string).split('\n');
+    await store.allowlist.add(accounts);
+    reply.send({ message: 'Added successfully' });
+  });
+
   // Remove from list, newline delimited body
-  server.delete('/allowlist', async (request, reply) => {})
+  server.delete('/allowlist', async (request, reply) => {
+    const accounts = (request.body as string).split('\n');
+    await store.allowlist.remove(accounts);
+    reply.send({ message: 'Removed successfully' });
+  });
 
   // Create a new inbox
   // Should have auth from DP server?
@@ -214,29 +240,61 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
   server.delete('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params
+    const { domain, id } = request.params as { domain: string, id: string }
     await store.forDomain(domain).inbox.remove(id)
   })
   // Approve the item from the inbox
   server.post('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params
+    const { domain, id } = request.params as { domain: string, id: string }
     // TODO: Handle the type of activity!
     await store.forDomain(domain).inbox.remove(id)
   })
 
   // Get list of blocked users/instances as newline delimited string
-  server.get('/:domain/blocklist', async (request, reply) => {})
+  server.get('/:domain/blocklist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const blockedAccounts = await store.forDomain(domain).blocklist.list();
+    reply.send(blockedAccounts.join('\n'));
+  });
+
   // Add to the list, newline delimted list in body
-  server.post('/:domain/blocklist', async (request, reply) => {})
+  server.get('/:domain/blocklist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const accounts = (request.body as string).split('\n');
+    await store.forDomain(domain).blocklist.add(accounts);
+    reply.send({ message: 'Added successfully' });
+  });
+
   // Remove from list, newline delimited body
-  server.delete('/:domain/blocklist', async (request, reply) => {})
+  server.get('/:domain/blocklist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const accounts = (request.body as string).split('\n');
+    await store.forDomain(domain).blocklist.remove(accounts);
+    reply.send({ message: 'Removed successfully' });
+  });
 
   // Get list of auto-approved instances and users, newline delimited string
-  server.get('/:domain/allowlist', async (request, reply) => {})
+  server.get('/:domain/allowlist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const allowedAccounts = await store.forDomain(domain).allowlist.list();
+    reply.send(allowedAccounts.join('\n'));
+  });
+
   // Add to the list, newline delimted list in body
-  server.post('/:domain/allowlist', async (request, reply) => {})
+  server.get('/:domain/allowlist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const accounts = (request.body as string).split('\n');
+    await store.forDomain(domain).allowlist.add(accounts);
+    reply.send({ message: 'Added successfully' });
+  });
+
   // Remove from list, newline delimited body
-  server.delete('/:domain/allowlist', async (request, reply) => {})
+  server.get('/:domain/allowlist', async (request, reply) => {
+    const { domain} = request.params as { domain: string }
+    const accounts = (request.body as string).split('\n');
+    await store.forDomain(domain).allowlist.remove(accounts);
+    reply.send({ message: 'Removed successfully' });
+  });
 
   // Get list of followers as JSON-LD
   server.get('/:domain/followers', async (request, reply) => {})
