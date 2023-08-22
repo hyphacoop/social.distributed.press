@@ -65,8 +65,6 @@ export class DomainStore {
     const followerDb = this.db.sublevel('followers', { valueEncoding: 'json' })
     this.followers = new AccountListStore(followerDb)
   }
-
-  async getInfo
 }
 
 export class InboxStore {
