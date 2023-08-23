@@ -117,41 +117,117 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   }
 
   // Get global list of blocked users/instances as newline delimited string
-  server.get('/blocklist', async (request, reply) => {
+  server.get('/blocklist', {
+    schema: {
+      response: {
+        200: Type.String()
+      },
+      description: 'Get global list of blocked users/instances as newline delimited string.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
     const blockedAccounts = await store.blocklist.list();
-    reply.send(blockedAccounts.join('\n'));
+    reply.type('text/plain').send(blockedAccounts.join('\n'));
   });
 
   // Add to the list, newline delimted list in body
-  server.post('/blocklist', async (request, reply) => {
-    const accounts = (request.body as string).split('\n');
+  server.post<{
+    Body: {
+      accounts: string
+    }
+  }>('/blocklist', {
+    schema: {
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Add accounts to the global blocklist using newline delimited format.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const accounts = request.body.accounts.split('\n');
     await store.blocklist.add(accounts);
     reply.send({ message: 'Added successfully' });
   });
   
   // Remove from list, newline delimited body
-  server.delete('/blocklist', async (request, reply) => {
-    const accounts = (request.body as string).split('\n');
+  server.delete<{
+    Body: {
+      accounts: string
+    }
+  }>('/blocklist', {
+    schema: {
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Remove accounts to the global blocklist using newline delimited format.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const accounts = request.body.accounts.split('\n');
     await store.blocklist.remove(accounts);
     reply.send({ message: 'Removed successfully' });
   });
 
   // Get global list of auto-approved instances and users, newline delimited string
-  server.get('/allowlist', async (request, reply) => {
+  server.get('/allowlist', {
+    schema: {
+      response: {
+        200: Type.String()
+      },
+      description: 'Get global list of auto-approved instances and users, newline delimited string.',
+      tags: ['ActivityPub']
+    }
+  },  async (request, reply) => {
     const allowedAccounts = await store.allowlist.list();
-    reply.send(allowedAccounts.join('\n'));
+    reply.type('text/plain').send(allowedAccounts.join('\n'));
   });
 
   // Add to the list, newline delimted list in body
-  server.post('/allowlist', async (request, reply) => {
-    const accounts = (request.body as string).split('\n');
+  server.post<{
+    Body: {
+      accounts: string
+    }
+  }>('/allowlist', {
+    schema: {
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Add accounts to the global allowlist using newline delimited format.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const accounts = request.body.accounts.split('\n');
     await store.allowlist.add(accounts);
     reply.send({ message: 'Added successfully' });
   });
 
   // Remove from list, newline delimited body
-  server.delete('/allowlist', async (request, reply) => {
-    const accounts = (request.body as string).split('\n');
+  server.delete<{
+    Body: {
+      accounts: string
+    }
+  }>('/allowlist', {
+    schema: {
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Remove accounts to the global allowlist using newline delimited format.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const accounts = request.body.accounts.split('\n');
     await store.allowlist.remove(accounts);
     reply.send({ message: 'Removed successfully' });
   });
@@ -239,59 +315,207 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   })
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
-  server.delete('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params as { domain: string, id: string }
+  server.delete<{
+    Params: {
+      domain: string,
+      id: string
+    }
+  }>('/:domain/inbox:id', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String(),
+        id: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Delete a specific id from the inbox of the specified domain.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain, id } = request.params
     await store.forDomain(domain).inbox.remove(id)
   })
   // Approve the item from the inbox
-  server.post('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params as { domain: string, id: string }
+  server.post<{
+    Params: {
+      domain: string,
+      id: string
+    }
+  }>('/:domain/inbox:id', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String(),
+        id: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Approve a specific id from the inbox of the specified domain.',
+      tags: ['ActivityPub']
+    }
+  },  async (request, reply) => {
+    const { domain, id } = request.params
     // TODO: Handle the type of activity!
-    await store.forDomain(domain).inbox.remove(id)
+    await store.forDomain(domain).inbox.add(id)
   })
 
   // Get list of blocked users/instances as newline delimited string
-  server.get('/:domain/blocklist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
+  server.get<{
+    Params: {
+      domain: string
+    }
+  }>('/:domain/blocklist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Get list of blocked users/instances for a domain as newline delimited string.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain} = request.params
     const blockedAccounts = await store.forDomain(domain).blocklist.list();
-    reply.send(blockedAccounts.join('\n'));
+    reply.type('text/plain').send(blockedAccounts.join('\n'));
   });
 
   // Add to the list, newline delimted list in body
-  server.get('/:domain/blocklist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
-    const accounts = (request.body as string).split('\n');
+  server.post<{
+    Params: {
+      domain: string
+    },
+    Body: {
+      accounts: string
+    }
+  }>('/:domain/blocklist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Add to the blocklist for a domain. Takes newline delimited list in body.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain} = request.params
+    const accounts = request.body.accounts.split('\n');
     await store.forDomain(domain).blocklist.add(accounts);
     reply.send({ message: 'Added successfully' });
   });
 
   // Remove from list, newline delimited body
-  server.get('/:domain/blocklist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
-    const accounts = (request.body as string).split('\n');
+  server.delete<{
+    Params: {
+      domain: string
+    },
+    Body: {
+      accounts: string
+    }
+  }>('/:domain/blocklist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Remove from list, newline delimited body.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain} = request.params
+    const accounts = request.body.accounts.split('\n');
     await store.forDomain(domain).blocklist.remove(accounts);
     reply.send({ message: 'Removed successfully' });
   });
 
   // Get list of auto-approved instances and users, newline delimited string
-  server.get('/:domain/allowlist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
+  server.get<{
+    Params: {
+      domain: string
+    }
+  }>('/:domain/allowlist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Get list of auto-approved instances and users, newline delimited string.',
+      tags: ['ActivityPub']
+    }
+  },  async (request, reply) => {
+    const { domain} = request.params
     const allowedAccounts = await store.forDomain(domain).allowlist.list();
-    reply.send(allowedAccounts.join('\n'));
+    reply.type('text/plain').send(allowedAccounts.join('\n'));
   });
 
   // Add to the list, newline delimted list in body
-  server.get('/:domain/allowlist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
-    const accounts = (request.body as string).split('\n');
+  server.post<{
+    Params: {
+      domain: string
+    },
+    Body: {
+      accounts: string
+    }
+  }>('/:domain/allowlist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Add to the allowlist, newline delimted list in body.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain} = request.params
+    const accounts = request.body.accounts.split('\n');
     await store.forDomain(domain).allowlist.add(accounts);
     reply.send({ message: 'Added successfully' });
   });
 
   // Remove from list, newline delimited body
-  server.get('/:domain/allowlist', async (request, reply) => {
-    const { domain} = request.params as { domain: string }
-    const accounts = (request.body as string).split('\n');
+  server.delete<{
+    Params: {
+      domain: string
+    },
+    Body: {
+      accounts: string
+    }
+  }>('/:domain/blocklist', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      body: Type.Object({
+        accounts: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Remove from allowlist, newline delimited body.',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain} = request.params
+    const accounts = request.body.accounts.split('\n');
     await store.forDomain(domain).allowlist.remove(accounts);
     reply.send({ message: 'Removed successfully' });
   });
