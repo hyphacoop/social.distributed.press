@@ -126,9 +126,9 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const blockedAccounts = await store.blocklist.list();
-    reply.type('text/plain').send(blockedAccounts.join('\n'));
-  });
+    const blockedAccounts = await store.blocklist.list()
+    return await reply.type('text/plain').send(blockedAccounts.join('\n'))
+  })
 
   // Add to the list, newline delimted list in body
   server.post<{
@@ -147,11 +147,11 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n');
-    await store.blocklist.add(accounts);
-    reply.send({ message: 'Added successfully' });
-  });
-  
+    const accounts = request.body.accounts.split('\n')
+    await store.blocklist.add(accounts)
+    return await reply.send({ message: 'Added successfully' })
+  })
+
   // Remove from list, newline delimited body
   server.delete<{
     Body: {
@@ -169,10 +169,10 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n');
-    await store.blocklist.remove(accounts);
-    reply.send({ message: 'Removed successfully' });
-  });
+    const accounts = request.body.accounts.split('\n')
+    await store.blocklist.remove(accounts)
+    return await reply.send({ message: 'Removed successfully' })
+  })
 
   // Get global list of auto-approved instances and users, newline delimited string
   server.get('/allowlist', {
@@ -183,10 +183,10 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       description: 'Get global list of auto-approved instances and users, newline delimited string.',
       tags: ['ActivityPub']
     }
-  },  async (request, reply) => {
-    const allowedAccounts = await store.allowlist.list();
-    reply.type('text/plain').send(allowedAccounts.join('\n'));
-  });
+  }, async (request, reply) => {
+    const allowedAccounts = await store.allowlist.list()
+    return await reply.type('text/plain').send(allowedAccounts.join('\n'))
+  })
 
   // Add to the list, newline delimted list in body
   server.post<{
@@ -205,10 +205,10 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n');
-    await store.allowlist.add(accounts);
-    reply.send({ message: 'Added successfully' });
-  });
+    const accounts = request.body.accounts.split('\n')
+    await store.allowlist.add(accounts)
+    return await reply.send({ message: 'Added successfully' })
+  })
 
   // Remove from list, newline delimited body
   server.delete<{
@@ -227,10 +227,10 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n');
-    await store.allowlist.remove(accounts);
-    reply.send({ message: 'Removed successfully' });
-  });
+    const accounts = request.body.accounts.split('\n')
+    await store.allowlist.remove(accounts)
+    return await reply.send({ message: 'Removed successfully' })
+  })
 
   // Create a new inbox
   // Should have auth from DP server?
@@ -317,7 +317,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   // The ID is the URL encoded id from the inbox activity
   server.delete<{
     Params: {
-      domain: string,
+      domain: string
       id: string
     }
   }>('/:domain/inbox:id', {
@@ -339,7 +339,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
   // Approve the item from the inbox
   server.post<{
     Params: {
-      domain: string,
+      domain: string
       id: string
     }
   }>('/:domain/inbox:id', {
@@ -354,7 +354,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       description: 'Approve a specific id from the inbox of the specified domain.',
       tags: ['ActivityPub']
     }
-  },  async (request, reply) => {
+  }, async (request, reply) => {
     const { domain, id } = request.params
     // TODO: Handle the type of activity!
     await store.forDomain(domain).inbox.add(id)
@@ -377,16 +377,16 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain} = request.params
-    const blockedAccounts = await store.forDomain(domain).blocklist.list();
-    reply.type('text/plain').send(blockedAccounts.join('\n'));
-  });
+    const { domain } = request.params
+    const blockedAccounts = await store.forDomain(domain).blocklist.list()
+    return await reply.type('text/plain').send(blockedAccounts.join('\n'))
+  })
 
   // Add to the list, newline delimted list in body
   server.post<{
     Params: {
       domain: string
-    },
+    }
     Body: {
       accounts: string
     }
@@ -405,17 +405,17 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain} = request.params
-    const accounts = request.body.accounts.split('\n');
-    await store.forDomain(domain).blocklist.add(accounts);
-    reply.send({ message: 'Added successfully' });
-  });
+    const { domain } = request.params
+    const accounts = request.body.accounts.split('\n')
+    await store.forDomain(domain).blocklist.add(accounts)
+    return await reply.send({ message: 'Added successfully' })
+  })
 
   // Remove from list, newline delimited body
   server.delete<{
     Params: {
       domain: string
-    },
+    }
     Body: {
       accounts: string
     }
@@ -434,11 +434,11 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain} = request.params
-    const accounts = request.body.accounts.split('\n');
-    await store.forDomain(domain).blocklist.remove(accounts);
-    reply.send({ message: 'Removed successfully' });
-  });
+    const { domain } = request.params
+    const accounts = request.body.accounts.split('\n')
+    await store.forDomain(domain).blocklist.remove(accounts)
+    return await reply.send({ message: 'Removed successfully' })
+  })
 
   // Get list of auto-approved instances and users, newline delimited string
   server.get<{
@@ -456,17 +456,17 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       description: 'Get list of auto-approved instances and users, newline delimited string.',
       tags: ['ActivityPub']
     }
-  },  async (request, reply) => {
-    const { domain} = request.params
-    const allowedAccounts = await store.forDomain(domain).allowlist.list();
-    reply.type('text/plain').send(allowedAccounts.join('\n'));
-  });
+  }, async (request, reply) => {
+    const { domain } = request.params
+    const allowedAccounts = await store.forDomain(domain).allowlist.list()
+    return await reply.type('text/plain').send(allowedAccounts.join('\n'))
+  })
 
   // Add to the list, newline delimted list in body
   server.post<{
     Params: {
       domain: string
-    },
+    }
     Body: {
       accounts: string
     }
@@ -485,17 +485,17 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain} = request.params
-    const accounts = request.body.accounts.split('\n');
-    await store.forDomain(domain).allowlist.add(accounts);
-    reply.send({ message: 'Added successfully' });
-  });
+    const { domain } = request.params
+    const accounts = request.body.accounts.split('\n')
+    await store.forDomain(domain).allowlist.add(accounts)
+    return await reply.send({ message: 'Added successfully' })
+  })
 
   // Remove from list, newline delimited body
   server.delete<{
     Params: {
       domain: string
-    },
+    }
     Body: {
       accounts: string
     }
@@ -514,11 +514,11 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain} = request.params
-    const accounts = request.body.accounts.split('\n');
-    await store.forDomain(domain).allowlist.remove(accounts);
-    reply.send({ message: 'Removed successfully' });
-  });
+    const { domain } = request.params
+    const accounts = request.body.accounts.split('\n')
+    await store.forDomain(domain).allowlist.remove(accounts)
+    return await reply.send({ message: 'Removed successfully' })
+  })
 
   // Get list of followers as JSON-LD
   server.get('/:domain/followers', async (request, reply) => {})
