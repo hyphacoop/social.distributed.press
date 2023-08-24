@@ -123,7 +123,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Get global list of blocked users/instances as newline delimited string.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const blockedAccounts = await store.blocklist.list()
@@ -144,7 +144,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Add accounts to the global blocklist using newline delimited format.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const accounts = request.body.accounts.split('\n')
@@ -166,7 +166,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Remove accounts to the global blocklist using newline delimited format.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const accounts = request.body.accounts.split('\n')
@@ -181,7 +181,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Get global list of auto-approved instances and users, newline delimited string.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const allowedAccounts = await store.allowlist.list()
@@ -202,7 +202,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Add accounts to the global allowlist using newline delimited format.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const accounts = request.body.accounts.split('\n')
@@ -224,7 +224,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Remove accounts to the global allowlist using newline delimited format.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const accounts = request.body.accounts.split('\n')
@@ -374,7 +374,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Get list of blocked users/instances for a domain as newline delimited string.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
@@ -402,7 +402,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Add to the blocklist for a domain. Takes newline delimited list in body.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
@@ -431,7 +431,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Remove from list, newline delimited body.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
@@ -454,7 +454,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Get list of auto-approved instances and users, newline delimited string.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
@@ -482,7 +482,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Add to the allowlist, newline delimted list in body.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
@@ -511,7 +511,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
         200: Type.String()
       },
       description: 'Remove from allowlist, newline delimited body.',
-      tags: ['ActivityPub']
+      tags: ['Moderation']
     }
   }, async (request, reply) => {
     const { domain } = request.params
