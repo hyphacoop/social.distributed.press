@@ -65,6 +65,18 @@ export class DomainStore {
     const followerDb = this.db.sublevel('followers', { valueEncoding: 'json' })
     this.followers = new AccountListStore(followerDb)
   }
+
+  async getInfo (): Promise<DomainInfo> {
+    return await this.db.get('info')
+  }
+
+  async setInfo (info: DomainInfo): Promise<void> {
+    await this.db.put('info', info)
+  }
+
+  async delete (): Promise<void> {
+  // TODO: delete all keys within the db
+  }
 }
 
 export class InboxStore {

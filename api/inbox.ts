@@ -1,16 +1,82 @@
-import { APActivity, IdField } from 'activitypub-types'
+import { APActivity, IdField, APOrderedCollection } from 'activitypub-types'
 import type { APIConfig, FastifyTypebox } from '.'
-import Store from '../store'
+import Store, { DomainInfo } from '../store'
 import { Type } from '@sinclair/typebox'
 import signatureParser from 'activitypub-http-signatures'
 
 export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
-  server.post('/:domain/', async (request, reply) => { })
-  // Get ifno about domain
-  server.get('/:domain/', async (request, reply) => { })
+  server.post<{
+    Params: {
+      domain: string
+    }
+    Reply: DomainInfo
+    Body: DomainInfo
+  }>('/:domain/', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      body: Type.Object({}),
+      response: {
+      // TODO: Use tyebox to declare domaininfo struct
+        200: Type.Object({})
+      },
+      description: 'Register a new domain for the social inbox',
+      tags: ['CreationActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain } = request.params
+    const info = request.body
+    await store.forDomain(domain).setInfo(info)
+    return await reply.send(info)
+  })
+
+  // Get info about domain
+  server.get<{
+    Params: {
+      domain: string
+    }
+    Reply: DomainInfo
+  }>('/:domain/', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+      // TODO: Use tyebox to declare domaininfo struct
+        200: Type.Object({})
+      },
+      description: 'Load your domain info',
+      tags: ['CreationActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain } = request.params
+    const info = await store.forDomain(domain).getInfo()
+    return await reply.send(info)
+  })
+
   // Delete your inbox data
-  server.delete('/:domain/', async (request, reply) => { })
+  server.delete<{
+    Params: {
+      domain: string
+    }
+  }>('/:domain/', {
+    schema: {
+      params: Type.Object({
+        domain: Type.String()
+      }),
+      response: {
+        200: Type.String()
+      },
+      description: 'Delete a domain',
+      tags: ['CreationActivityPub']
+    }
+  }, async (request, reply) => {
+    const { domain } = request.params
+    await store.forDomain(domain).delete()
+    return await reply.send({ message: 'Data deleted successfully' })
+  })
 
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
   // Follows / Boosts/ Replies / etc will all be mixed in here
@@ -20,7 +86,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: Fast
     Params: {
       domain: string
     }
-    Reply: APActivity[]
+    Reply: APOrderedCollection
   }>('/:domain/inbox', {
     schema: {
       params: Type.Object({
@@ -30,8 +96,14 @@ export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: Fast
     }
   }, async (request, reply) => {
     const { domain } = request.params
-    const activities = await store.forDomain(domain).inbox.list()
-    return await reply.send(activities)
+    const orderedItems = await store.forDomain(domain).inbox.list()
+    const orderedCollection = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      id: 'https://mastodon.mauve.moe/users/mauve/outbox',
+      type: 'OrderedCollection',
+      orderedItems
+    }
+    return await reply.send(orderedCollection)
   })
 
   // This is what instances will POST to in order to notify of follows/replies/etc
@@ -45,6 +117,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: Fast
       params: Type.Object({
         domain: Type.String()
       }),
+      // TODO: Typebox apoactivity
       body: Type.Object({}),
       response: {
         200: Type.String()
