@@ -4,8 +4,7 @@
   ],
   "files": [
     "@types/fastify.d.ts",
-    "@types/fastify-jwt.d.ts",
-    "@types/activitypub-http-signatures.d.ts"
+    "@types/fastify-jwt.d.ts"
   ],
   "compilerOptions": {
     "target": "esnext",
@@ -19,6 +18,8 @@
     "esModuleInterop": true
   },
   "ts-node": {
-    "files": true
+    "files": true,
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   }
 }

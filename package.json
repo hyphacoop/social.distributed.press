@@ -5,32 +5,24 @@
   "main": "build/index.js",
   "type": "module",
   "scripts": {
+    "generate-identity": "ts-node-esm scripts/generate-identity.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
     "start": "ts-node-esm index.ts | pino-pretty -c -t",
+    "build": "npm run clean && tsc",
     "test": "ava --concurrency 1 --timeout=1m"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hyphacoop/api.distributed.press.git"
+    "url": "git+https://github.com/hyphacoop/social.distributed.press.git"
   },
-  "keywords": [
-    "publish",
-    "dweb",
-    "hypercore",
-    "dat",
-    "ipfs",
-    "web monetization",
-    "ethereum"
-  ],
   "author": "Distributed Press",
   "license": "AGPL-3.0",
   "bugs": {
-    "url": "https://github.com/hyphacoop/api.distributed.press/issues"
+    "url": "https://github.com/hyphacoop/social.distributed.press/issues"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "homepage": "https://distributed.press",
   "dependencies": {
     "@fastify/auth": "^4.2.0",
     "@fastify/jwt": "^6.5.0",
@@ -40,6 +32,7 @@
     "@fastify/type-provider-typebox": "^2.4.0",
     "@sinclair/typebox": "^0.25.9",
     "abstract-level": "^1.0.3",
+    "activitypub-http-signatures": "^2.0.1",
     "activitypub-types": "^1.0.1",
     "cors": "^2.8.5",
     "dns2": "^2.1.0",

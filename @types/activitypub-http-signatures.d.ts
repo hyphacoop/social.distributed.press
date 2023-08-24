@@ -1,12 +1,13 @@
 declare module 'activitypub-http-signatures' {
-
+  import { IncomingHttpHeaders } from 'http'
   export interface RequestOptions {
     method?: string
     url?: string
-    headers?: Headers
+    headers?: IncomingHttpHeaders
   }
   export class Parser {
     sign (options: RequestOptions): Sha256Signature
+    parse (options: RequestOptions): Sha256Signature
   }
 
   export interface SignerOptions {
@@ -28,6 +29,6 @@ declare module 'activitypub-http-signatures' {
     verify (publickey: string): boolean
   }
 
-  declare const parser: Parser
+  const parser: Parser
   export default parser
 }
