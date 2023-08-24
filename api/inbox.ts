@@ -6,7 +6,11 @@ import signatureParser from 'activitypub-http-signatures'
 
 export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
-  server.post('/:domain/inbox', async (request, reply) => { })
+  server.post('/:domain/', async (request, reply) => { })
+  // Get ifno about domain
+  server.get('/:domain/', async (request, reply) => { })
+  // Delete your inbox data
+  server.delete('/:domain/', async (request, reply) => { })
 
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
   // Follows / Boosts/ Replies / etc will all be mixed in here

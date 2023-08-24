@@ -1,4 +1,4 @@
-import Store, { DomainStore } from '../store/index.js'
+import Store from '../store/index.js'
 
 export class ModerationChecker {
   private readonly store: Store
