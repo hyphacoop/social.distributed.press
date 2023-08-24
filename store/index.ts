@@ -1,19 +1,19 @@
 import { AbstractLevel } from 'abstract-level'
 import { APIConfig } from '../api/index.js'
 import { APActivity } from 'activitypub-types'
+import { KeyPair } from '../keypair.js'
 
 export interface DomainInfo {
   // The actor for the domain inbox
-  actorURL: string
+  actorUrl: string
   publicKeyId: string
-  privateKeyPEM: string
-  publicKeyPEM: string
+  keypair: KeyPair
 }
 
 export default class Store {
   db: AbstractLevel<any, string, any>
   domains: Map<string, DomainStore>
-  domainDB: AbstractLevel<any, string, any>
+  domainDb: AbstractLevel<any, string, any>
   blocklist: AccountListStore
   allowlist: AccountListStore
   config: APIConfig
@@ -22,7 +22,7 @@ export default class Store {
     this.config = config
     this.db = db
     this.domains = new Map()
-    this.domainDB = this.db.sublevel('domains', { valueEncoding: 'json' })
+    this.domainDb = this.db.sublevel('domains', { valueEncoding: 'json' })
     const blocklistDb = this.db.sublevel('blocklist', { valueEncoding: 'json' })
     this.blocklist = new AccountListStore(blocklistDb)
     const allowlistDb = this.db.sublevel('allowlist', { valueEncoding: 'json' })
@@ -79,7 +79,7 @@ export class InboxStore {
     return encodeURIComponent(url)
   }
 
-  async add (url: string, activity: APActivity): Promise<void> {
+  async add (activity: APActivity): Promise<void> {
     // application should fetch the url from the activity or normalize whatever
     // // make key from url and put
   }

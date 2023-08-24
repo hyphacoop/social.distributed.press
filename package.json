@@ -5,6 +5,7 @@
   "main": "build/index.js",
   "type": "module",
   "scripts": {
+    "generate-identity": "ts-node-esm scripts/generate-identity.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
     "start": "ts-node-esm index.ts | pino-pretty -c -t",
     "build": "npm run clean && tsc",

@@ -1,8 +1,8 @@
 import { generateKeyPairSync } from 'node:crypto'
 
 export interface KeyPair {
-  publicKeyPEM: string
-  privateKeyPEM: string
+  publicKeyPem: string
+  privateKeyPem: string
 }
 
 export default function generateIdentity (): KeyPair {
@@ -22,7 +22,7 @@ export default function generateIdentity (): KeyPair {
   })
 
   return {
-    publicKeyPEM: publicKey,
-    privateKeyPEM: privateKey
+    publicKeyPem: publicKey,
+    privateKeyPem: privateKey
   }
 }
