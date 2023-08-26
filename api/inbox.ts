@@ -1,10 +1,12 @@
 import { APActivity, IdField, APOrderedCollection } from 'activitypub-types'
-import type { APIConfig, FastifyTypebox } from '.'
-import Store, { DomainInfo } from '../store'
 import { Type } from '@sinclair/typebox'
 import signatureParser from 'activitypub-http-signatures'
 
-export const inboxRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
+import type { APIConfig, FastifyTypebox } from '.'
+import Store, { DomainInfo } from '../store'
+import type ActivityPubSystem from './apsystem.js'
+
+export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
   server.post<{
     Params: {

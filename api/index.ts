@@ -15,7 +15,9 @@ import path from 'node:path'
 import envPaths from 'env-paths'
 import { Level } from 'level'
 import { MemoryLevel } from 'memory-level'
+
 import Store from '../store/index.js'
+import ActivityPubSystem from './apsystem.js'
 import { ServerI } from '../index.js'
 import { inboxRoutes } from './inbox.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
@@ -50,6 +52,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
 
   const server = fastify({ logger: cfg.useLogging }).withTypeProvider<TypeBoxTypeProvider>()
   const store = new Store(cfg, db)
+  const apsystem = new ActivityPubSystem(store)
 
   await server.register(multipart)
 
@@ -73,12 +76,12 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     return 'ok\n'
   })
 
-  await server.register(v1Routes(cfg, store), { prefix: '/v1' })
+  await server.register(v1Routes(cfg, store, apsystem), { prefix: '/v1' })
   await server.ready()
   return server
 }
 
-const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
+const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   if (cfg.usePrometheus ?? false) {
     await server.register(metrics, { endpoint: '/metrics' })
   }
@@ -101,7 +104,7 @@ const v1Routes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox
 
   // Get info about the domain like the public key and configuration settings
   server.get('/:domain', async (request, reply) => { })
-  await server.register(inboxRoutes(cfg, store))
+  await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
   await server.register(followerRoutes(cfg, store))
   await server.register(hookRoutes(cfg, store))
