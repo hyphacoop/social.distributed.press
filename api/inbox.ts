@@ -3,80 +3,80 @@ import { Type } from '@sinclair/typebox'
 import signatureParser from 'activitypub-http-signatures'
 
 import type { APIConfig, FastifyTypebox } from '.'
-import Store, { DomainInfo } from '../store'
+import Store, { ActorInfo } from '../store'
 import type ActivityPubSystem from './apsystem.js'
 
 export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
   server.post<{
     Params: {
-      domain: string
+      actor: string
     }
-    Reply: DomainInfo
-    Body: DomainInfo
-  }>('/:domain/', {
+    Reply: ActorInfo
+    Body: ActorInfo
+  }>('/:actor/', {
     schema: {
       params: Type.Object({
-        domain: Type.String()
+        actor: Type.String()
       }),
       body: Type.Object({}),
       response: {
-      // TODO: Use tyebox to declare domaininfo struct
+      // TODO: Use tyebox to declare ActorInfo struct
         200: Type.Object({})
       },
-      description: 'Register a new domain for the social inbox',
+      description: 'Register a new actor for the social inbox',
       tags: ['CreationActivityPub']
     }
   }, async (request, reply) => {
-    const { domain } = request.params
+    const { actor } = request.params
     const info = request.body
-    await store.forDomain(domain).setInfo(info)
+    await store.forActor(actor).setInfo(info)
     return await reply.send(info)
   })
 
-  // Get info about domain
+  // Get info about actor
   server.get<{
     Params: {
-      domain: string
+      actor: string
     }
-    Reply: DomainInfo
-  }>('/:domain/', {
+    Reply: ActorInfo
+  }>('/:actor/', {
     schema: {
       params: Type.Object({
-        domain: Type.String()
+        actor: Type.String()
       }),
       response: {
-      // TODO: Use tyebox to declare domaininfo struct
+      // TODO: Use tyebox to declare ActorInfo struct
         200: Type.Object({})
       },
-      description: 'Load your domain info',
+      description: 'Load your actor info',
       tags: ['CreationActivityPub']
     }
   }, async (request, reply) => {
-    const { domain } = request.params
-    const info = await store.forDomain(domain).getInfo()
+    const { actor } = request.params
+    const info = await store.forActor(actor).getInfo()
     return await reply.send(info)
   })
 
   // Delete your inbox data
   server.delete<{
     Params: {
-      domain: string
+      actor: string
     }
-  }>('/:domain/', {
+  }>('/:actor/', {
     schema: {
       params: Type.Object({
-        domain: Type.String()
+        actor: Type.String()
       }),
       response: {
         200: Type.String()
       },
-      description: 'Delete a domain',
+      description: 'Delete a actor',
       tags: ['CreationActivityPub']
     }
   }, async (request, reply) => {
-    const { domain } = request.params
-    await store.forDomain(domain).delete()
+    const { actor } = request.params
+    await store.forActor(actor).delete()
     return await reply.send({ message: 'Data deleted successfully' })
   })
 
@@ -86,19 +86,20 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   // Likewise items will get auto-accepted if they match the allowlist
   server.get<{
     Params: {
-      domain: string
+      actor: string
     }
     Reply: APOrderedCollection
-  }>('/:domain/inbox', {
+  }>('/:actor/inbox', {
     schema: {
       params: Type.Object({
-        domain: Type.String()
+        actor: Type.String()
       }),
-      description: 'Items in the inbox queue.'
+      description: 'Items in the inbox queue.',
+      tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain } = request.params
-    const orderedItems = await store.forDomain(domain).inbox.list()
+    const { actor } = request.params
+    const orderedItems = await store.forActor(actor).inbox.list()
     const orderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       id: 'https://mastodon.mauve.moe/users/mauve/outbox',
@@ -111,23 +112,24 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   // This is what instances will POST to in order to notify of follows/replies/etc
   server.post<{
     Params: {
-      domain: string
+      actor: string
     }
     Body: APActivity
-  }>('/:domain/inbox', {
+  }>('/:actor/inbox', {
     schema: {
       params: Type.Object({
-        domain: Type.String()
+        actor: Type.String()
       }),
       // TODO: Typebox apoactivity
       body: Type.Object({}),
       response: {
         200: Type.String()
       },
-      description: 'ActivityPub inbox for your domain.'
+      description: 'ActivityPub inbox for your actor.',
+      tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const { domain } = request.params
+    const { actor } = request.params
     const { url, method, headers } = request
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
@@ -154,34 +156,95 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       throw new Error(`Invalid HTTP signature for ${keyId}`)
     }
 
+    // TODO: check that the actor is the one that signed the request
     const activity = request.body
+
+    await apsystem.ingestActivity(actor, activity)
 
     // TODO: Check blocklist and reject
     // TODO: Check allowlist and process requests automatically
-    await store.forDomain(domain).inbox.add(activity)
+    await store.forActor(actor).inbox.add(activity)
+    return await reply.send({ message: 'ok' })
   })
 
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
   server.delete<{
     Params: {
-      domain: string
+      actor: string
       id: IdField
     }
-  }>('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params
-    await store.forDomain(domain).inbox.remove(id)
+  }>('/:actor/inbox/:id', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        id: Type.String()
+      }),
+      // TODO: Typebox apoactivity
+      response: {
+        200: Type.String()
+      },
+      description: 'Reject an Activity in your inbox',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, id } = request.params
+    await apsystem.rejectActivity(actor, id)
+    return await reply.send({ message: 'ok' })
   })
 
   // Approve the item from the inbox
   server.post<{
     Params: {
-      domain: string
+      actor: string
       id: IdField
     }
-  }>('/:domain/inbox/:id', async (request, reply) => {
-    const { domain, id } = request.params
-    // TODO: Handle the type of activity!
-    await store.forDomain(domain).inbox.remove(id)
+  }>('/:actor/inbox/:id', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        id: Type.String()
+      }),
+      // TODO: Typebox apoactivity
+      response: {
+        200: Type.String()
+      },
+      description: 'Approve an Activity in your inbox',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, id } = request.params
+    await apsystem.approveActivity(actor, id)
+
+    return await reply.send({ message: 'ok' })
+  })
+
+  // Publishers should POST here to notify followers of new activities
+  server.post<{
+    Params: {
+      actor: string
+    }
+    Body: APActivity
+  }>('/:actor/outbox', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String()
+      }),
+      // TODO: Typebox apoactivity
+      body: Type.Object({}),
+      response: {
+        200: Type.String()
+      },
+      description: 'ActivityPub outbox for notifying followers',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor } = request.params
+
+    const activity = request.body
+
+    // TODO: logic for notifying specific followers of replies
+    await apsystem.notifyFollowers(actor, activity)
+    return await reply.send({ message: 'ok' })
   })
 }

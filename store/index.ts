@@ -3,7 +3,7 @@ import { APIConfig } from '../api/index.js'
 import { APActivity } from 'activitypub-types'
 import { KeyPair } from '../keypair.js'
 
-export interface DomainInfo {
+export interface ActorInfo {
   // The actor for the domain inbox
   actorUrl: string
   publicKeyId: string
@@ -12,8 +12,8 @@ export interface DomainInfo {
 
 export default class Store {
   db: AbstractLevel<any, string, any>
-  domains: Map<string, DomainStore>
-  domainDb: AbstractLevel<any, string, any>
+  actorCache: Map<string, ActorStore>
+  actorsDb: AbstractLevel<any, string, any>
   blocklist: AccountListStore
   allowlist: AccountListStore
   config: APIConfig
@@ -21,22 +21,22 @@ export default class Store {
   constructor (config: APIConfig, db: AbstractLevel<any, string, any>) {
     this.config = config
     this.db = db
-    this.domains = new Map()
-    this.domainDb = this.db.sublevel('domains', { valueEncoding: 'json' })
+    this.actorCache = new Map()
+    this.actorsDb = this.db.sublevel('actorCache', { valueEncoding: 'json' })
     const blocklistDb = this.db.sublevel('blocklist', { valueEncoding: 'json' })
     this.blocklist = new AccountListStore(blocklistDb)
     const allowlistDb = this.db.sublevel('allowlist', { valueEncoding: 'json' })
     this.allowlist = new AccountListStore(allowlistDb)
   }
 
-  forDomain (domain: string): DomainStore {
-    if (!this.domains.has(domain)) {
+  forActor (domain: string): ActorStore {
+    if (!this.actorCache.has(domain)) {
       const sub = this.db.sublevel(domain, { valueEncoding: 'json' })
-      const store = new DomainStore(sub)
-      this.domains.set(domain, store)
+      const store = new ActorStore(sub)
+      this.actorCache.set(domain, store)
     }
 
-    const store = this.domains.get(domain)
+    const store = this.actorCache.get(domain)
     if (store == null) {
       throw new Error('Domain store not initialixed')
     }
@@ -44,9 +44,9 @@ export default class Store {
   }
 }
 
-export class DomainStore {
+export class ActorStore {
   db: AbstractLevel<any, string, any>
-  inbox: InboxStore
+  inbox: ActivityStore
   blocklist: AccountListStore
   allowlist: AccountListStore
   followers: AccountListStore
@@ -54,7 +54,7 @@ export class DomainStore {
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
     const inboxDB = this.db.sublevel('inbox', { valueEncoding: 'json' })
-    this.inbox = new InboxStore(inboxDB)
+    this.inbox = new ActivityStore(inboxDB)
 
     const blocklistDb = this.db.sublevel('blocklist', { valueEncoding: 'json' })
     this.blocklist = new AccountListStore(blocklistDb)
@@ -66,11 +66,11 @@ export class DomainStore {
     this.followers = new AccountListStore(followerDb)
   }
 
-  async getInfo (): Promise<DomainInfo> {
+  async getInfo (): Promise<ActorInfo> {
     return await this.db.get('info')
   }
 
-  async setInfo (info: DomainInfo): Promise<void> {
+  async setInfo (info: ActorInfo): Promise<void> {
     await this.db.put('info', info)
   }
 
@@ -79,7 +79,7 @@ export class DomainStore {
   }
 }
 
-export class InboxStore {
+export class ActivityStore {
   db: AbstractLevel<any, string, any>
 
   constructor (db: AbstractLevel<any, string, any>) {
@@ -98,6 +98,11 @@ export class InboxStore {
 
   async remove (url: string): Promise<void> {
     // make key from url and delete
+  }
+
+  async get (url: string): Promise<APActivity> {
+  // make key from url and get
+    return null
   }
 
   async list (): Promise<APActivity[]> {
@@ -127,14 +132,14 @@ export class AccountListStore {
     return false
   }
 
-  async add (patterns: string[]): Promise<void> {
+  async add (patterns: string[] | string): Promise<void> {
     // start batch
     // make keys for each item
     // put into batch
     // flush
   }
 
-  async remove (patterns: string[]): Promise<void> {
+  async remove (patterns: string[] | string): Promise<void> {
     // start batch
     // make keys for each item
     // delete into batch

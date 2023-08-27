@@ -7,16 +7,16 @@ export class ModerationChecker {
     this.store = store
   }
 
-  async isAllowed (pattern: string, domain: string): Promise<boolean> {
-    const domainStore = this.store.forDomain(domain)
+  async isAllowed (pattern: string, actor: string): Promise<boolean> {
+    const actorStore = this.store.forActor(actor)
 
     // Check if in the global blocklist
     if (await this.store.blocklist.matches(pattern)) {
       return false
     }
 
-    // Check if in the domain-specific blocklist
-    if (await domainStore.blocklist.matches(pattern)) {
+    // Check if in the actor-specific blocklist
+    if (await actorStore.blocklist.matches(pattern)) {
       return false
     }
 
@@ -25,8 +25,8 @@ export class ModerationChecker {
       return true
     }
 
-    // Check if in the domain-specific allowlist
-    if (await domainStore.allowlist.matches(pattern)) {
+    // Check if in the actor-specific allowlist
+    if (await actorStore.allowlist.matches(pattern)) {
       return true
     }
 
