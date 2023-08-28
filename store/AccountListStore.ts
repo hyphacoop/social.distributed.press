@@ -19,7 +19,7 @@ export class AccountListStore {
     // make into key for wildcard
     const wildcardKey = this.patternToKey(`@*@${domain}`)
     try {
-      const value = await this.db.get(wildcardKey)
+      await this.db.get(wildcardKey)
       return true // found a wildcard match
     } catch (error) {
       // ignore, no wildcard match
@@ -28,7 +28,7 @@ export class AccountListStore {
     // make into key for the specific username
     const key = this.patternToKey(username)
     try {
-      const value = await this.db.get(key)
+      await this.db.get(key)
       return true // found an exact match
     } catch (error) {
       return false // no exact match found
