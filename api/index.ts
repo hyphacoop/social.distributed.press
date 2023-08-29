@@ -24,7 +24,7 @@ import { blockAllowListRoutes } from './blockallowlist.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
 
-const paths = envPaths('distributed-press')
+export const paths = envPaths('distributed-press')
 
 export type FastifyTypebox = FastifyInstance<
 RawServerDefault,
