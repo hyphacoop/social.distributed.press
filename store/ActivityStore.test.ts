@@ -1,3 +1,4 @@
+/* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
 import { ActivityStore } from './ActivityStore'
 import { MemoryLevel } from 'memory-level'
@@ -39,7 +40,7 @@ test('ActivityStore - remove activity', async t => {
     await store.get(activity.id!)
   }, {
     instanceOf: Error,
-    message: `Activity not found for URL: ${activity.id}`
+    message: `Activity not found for URL: ${activity.id!}`
   })
 })
 
