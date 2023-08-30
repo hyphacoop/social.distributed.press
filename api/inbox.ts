@@ -1,6 +1,5 @@
 import { APActivity, IdField, APOrderedCollection } from 'activitypub-types'
 import { Type } from '@sinclair/typebox'
-import signatureParser from 'activitypub-http-signatures'
 
 import type { APIConfig, FastifyTypebox } from '.'
 import Store, { ActorInfo } from '../store'
@@ -130,40 +129,16 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const { url, method, headers } = request
-    const signature = signatureParser.parse({ url, method, headers })
-    const { keyId } = signature
 
-    // Get the public key object using the provided key ID
-    const keyRes = await fetch(
-      keyId,
-      {
-        headers: {
-          accept: 'application/ld+json, application/json'
-        }
-      }
-    )
-
-    const { publicKey } = await keyRes.json()
-
-    // Verify the signature
-    const success = signature.verify(
-      publicKey.publicKeyPem // The PEM string from the public key object
-    )
-
-    if (!success) {
-      // TODO: Better error
-      throw new Error(`Invalid HTTP signature for ${keyId}`)
-    }
+    const submittedActor = await apsystem.verifySignedRequest(actor, request)
 
     // TODO: check that the actor is the one that signed the request
     const activity = request.body
 
+    if (activity.actor !== submittedActor) throw new Error('Submitted activity must be from signed actor')
+
     await apsystem.ingestActivity(actor, activity)
 
-    // TODO: Check blocklist and reject
-    // TODO: Check allowlist and process requests automatically
-    await store.forActor(actor).inbox.add(activity)
     return await reply.send({ message: 'ok' })
   })
 

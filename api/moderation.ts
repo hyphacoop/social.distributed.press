@@ -1,5 +1,11 @@
 import Store from '../store/index.js'
 
+export const BLOCKED = 'blocked'
+export const ALLOWED = 'allowed'
+export const QUEUE = 'queue'
+
+export type ModerationState = typeof BLOCKED | typeof ALLOWED | typeof QUEUE
+
 export class ModerationChecker {
   private readonly store: Store
 
@@ -7,32 +13,35 @@ export class ModerationChecker {
     this.store = store
   }
 
-  async isAllowed (pattern: string, actor: string): Promise<boolean> {
+  async check (pattern: string, actor: string): Promise<ModerationState> {
     const actorStore = this.store.forActor(actor)
 
-    // Check if in the global blocklist
-    if (await this.store.blocklist.matches(pattern)) {
-      return false
+    // Check if in the actor-specific allowlist
+    if (await actorStore.allowlist.matches(pattern)) {
+      return ALLOWED
     }
 
     // Check if in the actor-specific blocklist
     if (await actorStore.blocklist.matches(pattern)) {
-      return false
+      return BLOCKED
+    }
+
+    // Check if in the global blocklist
+    if (await this.store.blocklist.matches(pattern)) {
+      return BLOCKED
     }
 
     // Check if in the global allowlist
     if (await this.store.allowlist.matches(pattern)) {
-      return true
+      return ALLOWED
     }
 
-    // Check if in the actor-specific allowlist
-    if (await actorStore.allowlist.matches(pattern)) {
-      return true
-    }
+    return QUEUE
+  }
 
-    // If not on any list, we can implement a default behavior here.
-    // For this example, if the pattern is not on any list, it's allowed.
-    // We can change this default as per our needs.
-    return true
+  async isAllowed (pattern: string, actor: string): Promise<boolean> {
+    const state = await this.check(pattern, actor)
+
+    return state !== BLOCKED
   }
 }

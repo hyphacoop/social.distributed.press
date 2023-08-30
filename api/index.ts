@@ -23,6 +23,7 @@ import { inboxRoutes } from './inbox.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
+import { ModerationChecker } from './moderation.js'
 
 export const paths = envPaths('distributed-press')
 
@@ -51,7 +52,8 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
 
   const server = fastify({ logger: cfg.useLogging }).withTypeProvider<TypeBoxTypeProvider>()
   const store = new Store(cfg, db)
-  const apsystem = new ActivityPubSystem(store)
+  const modCheck = new ModerationChecker(store)
+  const apsystem = new ActivityPubSystem(store, modCheck)
 
   await server.register(multipart)
 

@@ -1,5 +1,14 @@
-import type Store from '../store/index.js'
 import type { APActivity, APActor } from 'activitypub-types'
+import signatureParser from 'activitypub-http-signatures'
+
+import type { FastifyRequest } from 'fastify'
+import {
+  ModerationChecker,
+  BLOCKED,
+  ALLOWED
+} from './moderation.js'
+
+import type Store from '../store/index.js'
 import { makeSigner } from '../keypair'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
@@ -15,11 +24,61 @@ export type FetchLike = typeof globalThis.fetch
 
 export default class ActivityPubSystem {
   store: Store
+  modCheck: ModerationChecker
   fetch: FetchLike
 
-  constructor (store: Store, fetch: FetchLike = globalThis.fetch) {
+  constructor (store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
     this.store = store
+    this.modCheck = modCheck
     this.fetch = fetch
+  }
+
+  async verifySignedRequest (fromActor: string, request: FastifyRequest): Promise<string> {
+    const { url, method, headers } = request
+    const signature = signatureParser.parse({ url, method, headers })
+    const { keyId } = signature
+
+    const keyIdHash = new URL(keyId).hash.slice(1)
+
+    const keyField = keyIdHash.length !== 0 ? keyIdHash : DEFAULT_PUBLIC_KEY_FIELD
+
+    // Convert from actor URL to `@username@domain format
+    const mention = await this.actorToMention(keyId)
+
+    const isAllowed = await this.modCheck.isAllowed(mention, fromActor)
+
+    if (!isAllowed) {
+    // TODO: HTTP status code 409?
+      throw new Error(`Blocked actor ${mention}`)
+    }
+
+    // Get the public key object using the provided key ID
+    const keyRes = await this.signedFetch(fromActor, {
+      url: keyId,
+      method: 'get',
+      headers: {
+        accept: 'application/ld+json, application/json'
+      }
+    })
+
+    const actor = await keyRes.json()
+
+    const publicKey = actor[keyField]
+    if (publicKey?.publicKeyPem === undefined) {
+      throw new Error(`Unable to find public key at ${keyField} in ${keyId}`)
+    }
+
+    // Verify the signature
+    const success = signature.verify(
+      publicKey.publicKeyPem // The PEM string from the public key object
+    )
+
+    if (!success) {
+      // TODO: Better error
+      throw new Error(`Invalid HTTP signature for ${keyId}`)
+    }
+
+    return keyId
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
@@ -153,9 +212,35 @@ export default class ActivityPubSystem {
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {
+    const activityId = activity.id
+
+    // TODO: handle array of string case and nested object
+    if (typeof activityId !== 'string') {
+      throw new Error('Activities must contain an ID')
+    }
+
+    const activityActor = activity.actor
+
+    // TODO: handle array of string case and nested object
+    if (typeof activityActor !== 'string') {
+      throw new Error('Activities must contain an actor string')
+    }
+
+    const mention = await this.actorToMention(activityActor)
+
+    const moderationState = await this.modCheck.check(mention, fromActor)
+
     const domainStore = this.store.forActor(fromActor)
     // TODO: trigger hooks
     await domainStore.inbox.add(activity)
+
+    if (moderationState === BLOCKED) {
+      await this.rejectActivity(fromActor, activityId)
+    } else if (moderationState === ALLOWED) {
+      await this.rejectActivity(fromActor, activityId)
+    } else {
+      // TODO: trigger hook
+    }
   }
 
   async approveActivity (fromActor: string, activityId: string): Promise<void> {
