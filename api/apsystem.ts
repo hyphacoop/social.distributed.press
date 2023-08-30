@@ -195,7 +195,7 @@ export default class ActivityPubSystem {
   }
 
   async removeFollower (fromActor: string, followerMention: string): Promise<void> {
-    await this.store.forActor(fromActor).followers.remove(followerMention)
+    await this.store.forActor(fromActor).followers.remove([followerMention])
   }
 
   async acceptFollow (fromActor: string, followActivity: APActivity): Promise<void> {
@@ -215,7 +215,7 @@ export default class ActivityPubSystem {
 
     const webmention = await this.actorToMention(followerURL)
 
-    await this.store.forActor(fromActor).followers.add(webmention)
+    await this.store.forActor(fromActor).followers.add([webmention])
   }
 
   async rejectFollow (fromActor: string, followActivity: APActivity): Promise<void> {
