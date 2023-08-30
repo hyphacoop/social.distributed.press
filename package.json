@@ -75,6 +75,9 @@
   "ts-standard": {
     "ignore": [
       "build"
-    ]
+    ],
+    "rules": {
+      "@typescript-eslint/no-non-null-assertion": 0
+    }
   }
 }

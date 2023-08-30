@@ -1,4 +1,5 @@
 import { generateKeyPairSync } from 'node:crypto'
+import { Sha256Signer } from 'activitypub-http-signatures'
 
 export interface KeyPair {
   publicKeyPem: string
@@ -25,4 +26,13 @@ export default function generateIdentity (): KeyPair {
     publicKeyPem: publicKey,
     privateKeyPem: privateKey
   }
+}
+
+export function makeSigner (keypair: KeyPair, publicKeyId: string): Sha256Signer {
+  const {
+    privateKeyPem: privateKey
+  } = keypair
+
+  const signer = new Sha256Signer({ publicKeyId, privateKey })
+  return signer
 }

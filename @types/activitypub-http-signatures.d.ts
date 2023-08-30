@@ -1,9 +1,10 @@
 declare module 'activitypub-http-signatures' {
-  import { IncomingHttpHeaders } from 'http'
   export interface RequestOptions {
     method?: string
     url?: string
-    headers?: IncomingHttpHeaders
+    headers?: {
+      [headerName: string]: string | string[] | undefined
+    }
   }
   export class Parser {
     sign (options: RequestOptions): Sha256Signature
@@ -13,7 +14,7 @@ declare module 'activitypub-http-signatures' {
   export interface SignerOptions {
     publicKeyId: string
     privateKey: string
-    headerNames: string[]
+    headerNames?: string[]
   }
 
   export class Sha256Signer {
