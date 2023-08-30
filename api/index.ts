@@ -40,7 +40,6 @@ export type APIConfig = Partial<{
   usePrometheus: boolean
   useMemoryBackedDB: boolean
   useSigIntHandler: boolean
-  useWebringDirectoryListing: boolean
 }> & ServerI
 
 async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {

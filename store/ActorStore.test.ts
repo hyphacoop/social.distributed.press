@@ -15,12 +15,11 @@ test('forActor caches ActorStore', async t => {
     port: 8080,
     host: 'localhost',
     // optional, choose appropriate mock value
-    useLogging: true,
-    useSwagger: true,
+    useLogging: false,
+    useSwagger: false,
     usePrometheus: false,
     useMemoryBackedDB: true,
     useSigIntHandler: true,
-    useWebringDirectoryListing: false,
     storage: paths.data // mock storage value from ServerI
   }
 
