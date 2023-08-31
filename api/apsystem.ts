@@ -231,7 +231,7 @@ export default class ActivityPubSystem {
     if (moderationState === BLOCKED) {
       await this.rejectActivity(fromActor, activityId)
     } else if (moderationState === ALLOWED) {
-      await this.rejectActivity(fromActor, activityId)
+      await this.approveActivity(fromActor, activityId)
     } else {
       // TODO: trigger hook
     }
