@@ -185,7 +185,7 @@ export default class ActivityPubSystem {
     const { username, domain } = parseMention(mention)
     const acct = `acct:${username}@${domain}`
     // TODO: dynamically determine the parameter name from the host-meta file
-    const mentionURL = `https://${domain}/.well-known/webmention?resource=${acct}`
+    const mentionURL = `https://${domain}/.well-known/webfinger?resource=${acct}`
 
     const response = await this.fetch(mentionURL)
 
