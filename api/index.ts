@@ -7,7 +7,6 @@ import fastify, {
   RawServerDefault,
   FastifyInstance
 } from 'fastify'
-import multipart from '@fastify/multipart'
 import swagger from '@fastify/swagger'
 import swagger_ui from '@fastify/swagger-ui'
 import metrics from 'fastify-metrics'
@@ -55,7 +54,11 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   const modCheck = new ModerationChecker(store)
   const apsystem = new ActivityPubSystem(store, modCheck)
 
-  await server.register(multipart)
+  const parser = server.getDefaultJsonParser('ignore', 'ignore')
+
+  server.addContentTypeParser('text/json', { parseAs: 'string' }, parser)
+  server.addContentTypeParser('application/ld+json', { parseAs: 'string' }, parser)
+  server.addContentTypeParser('application/activity+json', { parseAs: 'string' }, parser)
 
   // handle cleanup on shutdown
   server.addHook('onClose', async server => {
