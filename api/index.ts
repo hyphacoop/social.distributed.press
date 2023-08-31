@@ -107,7 +107,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
   // Get info about the domain like the public key and configuration settings
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
-  await server.register(followerRoutes(cfg, store))
+  await server.register(followerRoutes(cfg, store, apsystem))
   await server.register(hookRoutes(cfg, store))
 
   if (cfg.useSwagger ?? false) {

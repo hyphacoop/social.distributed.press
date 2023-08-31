@@ -101,8 +101,8 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const orderedItems = await store.forActor(actor).inbox.list()
     const orderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
-      id: request.url,
       type: 'OrderedCollection',
+      id: request.url,
       orderedItems
     }
     return await reply.send(orderedCollection)

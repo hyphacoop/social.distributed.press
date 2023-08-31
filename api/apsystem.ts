@@ -1,4 +1,4 @@
-import type { APActivity, APActor } from 'activitypub-types'
+import type { APActivity, APActor, APCollection } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
 
 import type { FastifyRequest } from 'fastify'
@@ -230,9 +230,9 @@ export default class ActivityPubSystem {
 
     const moderationState = await this.modCheck.check(mention, fromActor)
 
-    const domainStore = this.store.forActor(fromActor)
+    const actorStore = this.store.forActor(fromActor)
     // TODO: trigger hooks
-    await domainStore.inbox.add(activity)
+    await actorStore.inbox.add(activity)
 
     if (moderationState === BLOCKED) {
       await this.rejectActivity(fromActor, activityId)
@@ -244,8 +244,8 @@ export default class ActivityPubSystem {
   }
 
   async approveActivity (fromActor: string, activityId: string): Promise<void> {
-    const domainStore = this.store.forActor(fromActor)
-    const activity = await domainStore.inbox.get(activityId)
+    const actorStore = this.store.forActor(fromActor)
+    const activity = await actorStore.inbox.get(activityId)
 
     const { type } = activity
 
@@ -253,12 +253,12 @@ export default class ActivityPubSystem {
     if (type === 'Follow') {
       await this.acceptFollow(fromActor, activity)
     }
-    await domainStore.inbox.remove(activityId)
+    await actorStore.inbox.remove(activityId)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
-    const domainStore = this.store.forActor(fromActor)
-    const activity = await domainStore.inbox.get(activityId)
+    const actorStore = this.store.forActor(fromActor)
+    const activity = await actorStore.inbox.get(activityId)
 
     const { type } = activity
 
@@ -266,7 +266,7 @@ export default class ActivityPubSystem {
     if (type === 'Follow') {
       await this.acceptFollow(fromActor, activity)
     }
-    await domainStore.inbox.remove(activityId)
+    await actorStore.inbox.remove(activityId)
   }
 
   async notifyFollowers (fromActor: string, activity: APActivity): Promise<void> {
@@ -317,6 +317,32 @@ export default class ActivityPubSystem {
     }
 
     await this.sendTo(followerURL, fromActor, response)
+  }
+
+  async followersCollection (fromActor: string): Promise<APCollection> {
+    const actorStore = this.store.forActor(fromActor)
+    const actorURL = await this.mentionToActor(fromActor)
+
+    const profile = await this.getActor(actorURL)
+    let followersURL = profile.followers
+    // TODO: handle array of string?
+    if (typeof followersURL !== 'string') {
+      followersURL = actorURL + '#followers'
+    }
+
+    const followers = await actorStore.followers.list()
+
+    const items = await Promise.all(
+      followers.map(async (mention) => await this.mentionToActor(mention))
+    )
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'OrderedCollection',
+      id: followersURL,
+      items,
+      totalItems: items.length
+    }
   }
 }
 
