@@ -305,6 +305,7 @@ export default class ActivityPubSystem {
       // TODO: Resolve domain into actor?
       type: 'Accept',
       id,
+      to: followerURL,
       actor: fromActorURL,
       object: followActivity
     }
@@ -327,6 +328,7 @@ export default class ActivityPubSystem {
       // TODO: Resolve domain into actor?
       type: 'Reject',
       id,
+      to: followerURL,
       actor: fromActorURL,
       object: followActivity
     }
