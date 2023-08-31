@@ -31,11 +31,11 @@ export default function generateIdentity (): KeyPair {
   }
 }
 
-export function makeSigner (keypair: KeyPair, publicKeyId: string): Sha256Signer {
+export function makeSigner (keypair: KeyPair, publicKeyId: string, headerNames?: string[]): Sha256Signer {
   const {
     privateKeyPem: privateKey
   } = keypair
 
-  const signer = new Sha256Signer({ publicKeyId, privateKey })
+  const signer = new Sha256Signer({ publicKeyId, privateKey, headerNames })
   return signer
 }

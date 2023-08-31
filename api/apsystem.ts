@@ -1,5 +1,6 @@
 import type { APActivity, APActor, APCollection } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
+import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
 
 import type { FastifyRequest } from 'fastify'
@@ -41,6 +42,7 @@ export default class ActivityPubSystem {
   }
 
   async verifySignedRequest (fromActor: string, request: FastifyRequest): Promise<string> {
+  // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
@@ -92,14 +94,23 @@ export default class ActivityPubSystem {
       headers: initialHeaders,
       body
     } = request
+
+    const digest = await httpDigest
+      .createHeaderValue({
+        data: body ?? '',
+        algorithm: 'sha256',
+        useMultihash: false
+      })
+
     const headers = {
       ...initialHeaders,
       host: new URL(url).host,
-      date: new Date().toUTCString()
+      date: new Date().toUTCString(),
+      digest
     }
 
     // Sign data
-    const signer = makeSigner(keypair, publicKeyId)
+    const signer = makeSigner(keypair, publicKeyId, ['(request-target)', 'host', 'date', 'digest'])
     const signature = signer.sign({
       url,
       method,

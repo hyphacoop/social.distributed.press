@@ -24,6 +24,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
+    "@digitalbazaar/http-digest-header": "^2.0.0",
     "@fastify/auth": "^4.2.0",
     "@fastify/jwt": "^6.5.0",
     "@fastify/multipart": "^7.3.0",

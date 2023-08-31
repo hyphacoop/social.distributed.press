@@ -5,6 +5,8 @@ import type { APIConfig, FastifyTypebox } from '.'
 import Store from '../store'
 import type ActivityPubSystem from './apsystem.js'
 
+// TODO: Add ability to clear outbox items
+
 export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Publishers should POST here to notify followers of new activities
   server.post<{
