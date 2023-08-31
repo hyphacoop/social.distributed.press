@@ -47,9 +47,8 @@ export default class ActivityPubSystem {
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
 
-    const keyIdHash = new URL(keyId).hash.slice(1)
-
-    const keyField = keyIdHash.length !== 0 ? keyIdHash : DEFAULT_PUBLIC_KEY_FIELD
+    // TODO: Look up key from key id somehow?
+    const keyField = DEFAULT_PUBLIC_KEY_FIELD
 
     // Convert from actor URL to `@username@domain format
     const mention = await this.actorToMention(keyId)
