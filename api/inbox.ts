@@ -13,7 +13,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
     Reply: ActorInfo
     Body: ActorInfo
-  }>('/:actor/', {
+  }>('/:actor', {
     schema: {
       params: Type.Object({
         actor: Type.String()
@@ -39,7 +39,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       actor: string
     }
     Reply: ActorInfo
-  }>('/:actor/', {
+  }>('/:actor', {
     schema: {
       params: Type.Object({
         actor: Type.String()
@@ -62,7 +62,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     Params: {
       actor: string
     }
-  }>('/:actor/', {
+  }>('/:actor', {
     schema: {
       params: Type.Object({
         actor: Type.String()
@@ -101,7 +101,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const orderedItems = await store.forActor(actor).inbox.list()
     const orderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
-      id: 'https://mastodon.mauve.moe/users/mauve/outbox',
+      id: request.url,
       type: 'OrderedCollection',
       orderedItems
     }
