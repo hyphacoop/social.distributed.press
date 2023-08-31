@@ -2,83 +2,10 @@ import { APActivity, IdField, APOrderedCollection } from 'activitypub-types'
 import { Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
-import Store, { ActorInfo } from '../store'
+import Store from '../store'
 import type ActivityPubSystem from './apsystem.js'
 
 export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
-  // Create a new inbox
-  server.post<{
-    Params: {
-      actor: string
-    }
-    Reply: ActorInfo
-    Body: ActorInfo
-  }>('/:actor', {
-    schema: {
-      params: Type.Object({
-        actor: Type.String()
-      }),
-      body: Type.Object({}),
-      response: {
-      // TODO: Use tyebox to declare ActorInfo struct
-        200: Type.Object({})
-      },
-      description: 'Register a new actor for the social inbox',
-      tags: ['CreationActivityPub']
-    }
-  }, async (request, reply) => {
-    const { actor } = request.params
-    const info = request.body
-    await store.forActor(actor).setInfo(info)
-    return await reply.send(info)
-  })
-
-  // Get info about actor
-  server.get<{
-    Params: {
-      actor: string
-    }
-    Reply: ActorInfo
-  }>('/:actor', {
-    schema: {
-      params: Type.Object({
-        actor: Type.String()
-      }),
-      response: {
-      // TODO: Use tyebox to declare ActorInfo struct
-        200: Type.Object({})
-      },
-      description: 'Load your actor info',
-      tags: ['CreationActivityPub']
-    }
-  }, async (request, reply) => {
-    const { actor } = request.params
-    const info = await store.forActor(actor).getInfo()
-    return await reply.send(info)
-  })
-
-  // Delete your inbox data
-  server.delete<{
-    Params: {
-      actor: string
-    }
-  }>('/:actor', {
-    schema: {
-      params: Type.Object({
-        actor: Type.String()
-      }),
-      response: {
-        200: Type.String()
-      },
-      description: 'Delete a actor',
-      tags: ['CreationActivityPub']
-    }
-  }, async (request, reply) => {
-    const { actor } = request.params
-    await store.forActor(actor).delete()
-    return await reply.send({ message: 'Data deleted successfully' })
-  })
-
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
   // Follows / Boosts/ Replies / etc will all be mixed in here
   // Note that items will get auto-denied if they match a user / instance in the blocklist

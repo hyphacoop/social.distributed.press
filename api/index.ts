@@ -19,6 +19,7 @@ import Store from '../store/index.js'
 import ActivityPubSystem from './apsystem.js'
 import { ServerI } from '../index.js'
 import { inboxRoutes } from './inbox.js'
+import { creationRoutes } from './creation.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
@@ -107,7 +108,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
     })
   }
 
-  // Get info about the domain like the public key and configuration settings
+  await server.register(creationRoutes(cfg, store))
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
   await server.register(followerRoutes(cfg, store, apsystem))

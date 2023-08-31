@@ -1,10 +1,13 @@
+import { Type, Static } from '@sinclair/typebox'
 import { generateKeyPairSync } from 'node:crypto'
 import { Sha256Signer } from 'activitypub-http-signatures'
 
-export interface KeyPair {
-  publicKeyPem: string
-  privateKeyPem: string
-}
+export const KeyPairSchema = Type.Object({
+  publicKeyPem: Type.String(),
+  privateKeyPem: Type.String()
+})
+
+export type KeyPair = Static<typeof KeyPairSchema>
 
 export default function generateIdentity (): KeyPair {
   const {
