@@ -50,7 +50,10 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     ? new MemoryLevel({ valueEncoding: 'json' })
     : new Level(cfgStoragePath, { valueEncoding: 'json' })
 
-  const server = fastify({ logger: cfg.useLogging }).withTypeProvider<TypeBoxTypeProvider>()
+  const server = fastify({
+    logger: cfg.useLogging,
+    trustProxy: true
+  }).withTypeProvider<TypeBoxTypeProvider>()
   const store = new Store(cfg, db)
   const modCheck = new ModerationChecker(store)
   const apsystem = new ActivityPubSystem(store, modCheck)
@@ -110,8 +113,8 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
 
   await server.register(creationRoutes(cfg, store))
   await server.register(inboxRoutes(cfg, store, apsystem))
-  await server.register(blockAllowListRoutes(cfg, store))
   await server.register(followerRoutes(cfg, store, apsystem))
+  await server.register(blockAllowListRoutes(cfg, store))
   await server.register(hookRoutes(cfg, store))
 
   if (cfg.useSwagger ?? false) {

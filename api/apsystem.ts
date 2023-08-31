@@ -52,16 +52,7 @@ export default class ActivityPubSystem {
       throw new Error(`Blocked actor ${mention}`)
     }
 
-    // Get the public key object using the provided key ID
-    const keyRes = await this.signedFetch(fromActor, {
-      url: keyId,
-      method: 'get',
-      headers: {
-        accept: 'application/ld+json, application/json'
-      }
-    })
-
-    const actor = await keyRes.json()
+    const actor: any = await this.getActor(keyId)
 
     const publicKey = actor[keyField]
     if (publicKey?.publicKeyPem === undefined) {
@@ -154,6 +145,8 @@ export default class ActivityPubSystem {
     if (!response.ok) {
       throw new Error(`Cannot fetch actor data: http status ${response.status} - ${await response.text()}`)
     }
+
+    // TODO: Support html pages with a link rel in them
 
     // TODO: Verify structure?
     const actor = (await response.json()) as APActor
