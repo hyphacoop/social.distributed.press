@@ -43,3 +43,13 @@ test('AccountListStore - list patterns', async t => {
 
   t.deepEqual(accounts, ['@user2@example.com'], 'Only @user2@example.com should remain after removal of @user1@example.com')
 })
+
+test('AccountListStore - match all wildcard', async t => {
+  const store = newAccountListStore()
+  const patterns = ['@*@*']
+  await store.add(patterns)
+
+  t.true(await store.matches('@user1@example.com'))
+  t.true(await store.matches('@user2@example.com'))
+  t.true(await store.matches('@user2@other.com'))
+})

@@ -1,5 +1,7 @@
 import { AbstractLevel } from 'abstract-level'
 
+export const FULL_WILDCARD = '@*@*'
+
 export class AccountListStore {
   db: AbstractLevel<any, string, any>
 
@@ -12,9 +14,25 @@ export class AccountListStore {
     return `\x00${domain}\x00${username}`
   }
 
+  async hasCatchAll (): Promise<boolean> {
+  // make into key for wildcard
+    const key = this.patternToKey(FULL_WILDCARD)
+    try {
+      await this.db.get(key)
+      return true // found a wildcard match
+    } catch (error) {
+      // ignore, no wildcard match
+      return false
+    }
+  }
+
   // Format: @username@domain.com
   async matches (username: string): Promise<boolean> {
     const domain = username.split('@')[2]
+
+    if (await this.hasCatchAll()) {
+      return true
+    }
 
     // make into key for wildcard
     const wildcardKey = this.patternToKey(`@*@${domain}`)
