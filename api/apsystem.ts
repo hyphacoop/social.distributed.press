@@ -184,7 +184,8 @@ export default class ActivityPubSystem {
   async mentionToActor (mention: string): Promise<string> {
     const { username, domain } = parseMention(mention)
     const acct = `acct:${username}@${domain}`
-    const mentionURL = `https://${domain}/.well_known/?resource=${acct}`
+    // TODO: dynamically determine the parameter name from the host-meta file
+    const mentionURL = `https://${domain}/.well-known/webmention?resource=${acct}`
 
     const response = await this.fetch(mentionURL)
 
