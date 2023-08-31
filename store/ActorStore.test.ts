@@ -1,29 +1,15 @@
 import test from 'ava'
 import Store from './index'
 import { MemoryLevel } from 'memory-level'
-import { APIConfig, paths } from '../api/index.js'
 import { ActorStore } from './ActorStore'
 
 // Helper function to create a new Store instance
-function newStore (config: APIConfig): Store {
-  return new Store(config, new MemoryLevel({ valueEncoding: 'json' }))
+function newStore (): Store {
+  return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
 test('forActor caches ActorStore', async t => {
-  const config: APIConfig = {
-    // required by ServerI
-    port: 8080,
-    host: 'localhost',
-    // optional, choose appropriate mock value
-    useLogging: false,
-    useSwagger: false,
-    usePrometheus: false,
-    useMemoryBackedDB: true,
-    useSigIntHandler: true,
-    storage: paths.data // mock storage value from ServerI
-  }
-
-  const store = newStore(config)
+  const store = newStore()
 
   // Call forActor for a domain "example.com"
   const actorStore1 = store.forActor('example.com')

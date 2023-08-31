@@ -1,7 +1,6 @@
 import { Type, Static } from '@sinclair/typebox'
 import { AbstractLevel } from 'abstract-level'
 
-import { APIConfig } from '../api/index.js'
 import { KeyPairSchema } from '../keypair.js'
 import { ActorStore } from './ActorStore'
 import { AccountListStore } from './AccountListStore'
@@ -21,10 +20,9 @@ export default class Store {
   actorsDb: AbstractLevel<any, string, any>
   blocklist: AccountListStore
   allowlist: AccountListStore
-  config: APIConfig
 
-  constructor (config: APIConfig, db: AbstractLevel<any, string, any>) {
-    this.config = config
+  // TODO: Have store config which just needs the specific fields for the store
+  constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
     this.actorCache = new Map()
     this.actorsDb = this.db.sublevel('actorCache', { valueEncoding: 'json' })

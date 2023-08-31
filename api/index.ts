@@ -19,6 +19,7 @@ import Store from '../store/index.js'
 import ActivityPubSystem from './apsystem.js'
 import { ServerI } from '../index.js'
 import { inboxRoutes } from './inbox.js'
+import { outboxRoutes } from './outbox.js'
 import { creationRoutes } from './creation.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
 import { followerRoutes } from './followers.js'
@@ -54,9 +55,9 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     logger: cfg.useLogging,
     trustProxy: true
   }).withTypeProvider<TypeBoxTypeProvider>()
-  const store = new Store(cfg, db)
+  const store = new Store(db)
   const modCheck = new ModerationChecker(store)
-  const apsystem = new ActivityPubSystem(store, modCheck)
+  const apsystem = new ActivityPubSystem(cfg.publicURL, store, modCheck)
 
   const parser = server.getDefaultJsonParser('ignore', 'ignore')
 
@@ -113,6 +114,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
 
   await server.register(creationRoutes(cfg, store))
   await server.register(inboxRoutes(cfg, store, apsystem))
+  await server.register(outboxRoutes(cfg, store, apsystem))
   await server.register(followerRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
   await server.register(hookRoutes(cfg, store))

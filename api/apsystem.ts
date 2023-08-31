@@ -1,5 +1,6 @@
 import type { APActivity, APActor, APCollection } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
+import { nanoid } from 'nanoid'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -23,14 +24,20 @@ export interface BasicFetchParams {
 export type FetchLike = typeof globalThis.fetch
 
 export default class ActivityPubSystem {
+  publicURL: string
   store: Store
   modCheck: ModerationChecker
   fetch: FetchLike
 
-  constructor (store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
+  constructor (publicURL: string, store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
+    this.publicURL = publicURL
     this.store = store
     this.modCheck = modCheck
     this.fetch = fetch
+  }
+
+  makeURL (path: string): string {
+    return this.publicURL + path
   }
 
   async verifySignedRequest (fromActor: string, request: FastifyRequest): Promise<string> {
@@ -279,16 +286,18 @@ export default class ActivityPubSystem {
 
   async acceptFollow (fromActor: string, followActivity: APActivity): Promise<void> {
     const fromActorURL = await this.mentionToActor(fromActor)
-    const followId = followActivity.id as string
     const followerURL = followActivity.actor as string
+    const id = this.makeURL(`/v1/${fromActor}/outbox/${nanoid()}`)
+
     const response = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       // TODO: Resolve domain into actor?
-      id: `${fromActorURL}/followers/${followId}`,
       type: 'Accept',
+      id,
       actor: fromActorURL,
       object: followActivity
     }
+    await this.store.forActor(fromActor).outbox.add(response)
 
     await this.sendTo(followerURL, fromActor, response)
 
@@ -299,17 +308,18 @@ export default class ActivityPubSystem {
 
   async rejectFollow (fromActor: string, followActivity: APActivity): Promise<void> {
     const fromActorURL = await this.mentionToActor(fromActor)
-    const followId = followActivity.id as string
     const followerURL = followActivity.actor as string
+    const id = this.makeURL(`/v1/${fromActor}/outbox/${nanoid()}`)
+
     const response = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       // TODO: Resolve domain into actor?
-      id: `${fromActorURL}/followers/${followId}`,
       type: 'Reject',
+      id,
       actor: fromActorURL,
       object: followActivity
     }
-
+    await this.store.forActor(fromActor).outbox.add(response)
     await this.sendTo(followerURL, fromActor, response)
   }
 
@@ -337,6 +347,12 @@ export default class ActivityPubSystem {
       items,
       totalItems: items.length
     }
+  }
+
+  async getOutboxItem (fromActor: string, id: string): Promise<APActivity> {
+    const apId = this.makeURL(`/v1/${fromActor}/outbox/${id}`)
+
+    return await this.store.forActor(fromActor).outbox.get(apId)
   }
 }
 

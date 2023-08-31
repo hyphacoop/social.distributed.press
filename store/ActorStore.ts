@@ -6,6 +6,7 @@ import { AccountListStore } from './AccountListStore'
 export class ActorStore {
   db: AbstractLevel<any, string, any>
   inbox: ActivityStore
+  outbox: ActivityStore
   blocklist: AccountListStore
   allowlist: AccountListStore
   followers: AccountListStore
@@ -14,6 +15,8 @@ export class ActorStore {
     this.db = db
     const inboxDB = this.db.sublevel('inbox', { valueEncoding: 'json' })
     this.inbox = new ActivityStore(inboxDB)
+    const outboxDB = this.db.sublevel('outbox', { valueEncoding: 'json' })
+    this.outbox = new ActivityStore(outboxDB)
 
     const blocklistDb = this.db.sublevel('blocklist', {
       valueEncoding: 'json'

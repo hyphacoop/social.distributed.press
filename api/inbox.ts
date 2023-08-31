@@ -120,33 +120,4 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     return await reply.send({ message: 'ok' })
   })
-
-  // Publishers should POST here to notify followers of new activities
-  server.post<{
-    Params: {
-      actor: string
-    }
-    Body: APActivity
-  }>('/:actor/outbox', {
-    schema: {
-      params: Type.Object({
-        actor: Type.String()
-      }),
-      // TODO: Typebox apoactivity
-      body: Type.Object({}),
-      response: {
-        200: Type.String()
-      },
-      description: 'ActivityPub outbox for notifying followers',
-      tags: ['ActivityPub']
-    }
-  }, async (request, reply) => {
-    const { actor } = request.params
-
-    const activity = request.body
-
-    // TODO: logic for notifying specific followers of replies
-    await apsystem.notifyFollowers(actor, activity)
-    return await reply.send({ message: 'ok' })
-  })
 }

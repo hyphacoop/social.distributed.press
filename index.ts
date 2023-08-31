@@ -14,12 +14,18 @@ export interface ServerI {
   port: number
   host: string
   storage: string
+  publicURL: string
 }
 
+const port = Number(argv.port ?? process.env.PORT ?? '8080')
+const host = argv.host ?? process.env.HOST ?? 'localhost'
+const storage = argv.storage ?? paths.data
+const publicURL = `http://${host}:${port}`
 const cfg: ServerI = {
-  port: Number(argv.port ?? process.env.PORT ?? '8080'),
-  host: argv.host ?? process.env.HOST ?? 'localhost',
-  storage: argv.storage ?? paths.data
+  port,
+  host,
+  storage,
+  publicURL
 }
 
 const server = await apiBuilder({

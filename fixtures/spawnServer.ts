@@ -10,6 +10,7 @@ export async function spawnTestServer (): Promise<FastifyTypebox> {
     useMemoryBackedDB: true,
     port: 8080,
     host: 'localhost',
+    publicURL: 'http://localhost:8080',
     storage: storagePath
   })
 }
