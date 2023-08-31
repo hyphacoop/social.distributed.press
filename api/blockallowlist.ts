@@ -20,14 +20,11 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
 
   // Add to the list, newline delimted list in body
   server.post<{
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/blocklist', {
     schema: {
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -35,21 +32,18 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
       tags: ['Moderation']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.blocklist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
 
   // Remove from list, newline delimited body
   server.delete<{
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/blocklist', {
     schema: {
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -57,7 +51,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
       tags: ['Moderation']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.blocklist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
@@ -78,14 +72,11 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
 
   // Add to the list, newline delimted list in body
   server.post<{
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/allowlist', {
     schema: {
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -93,21 +84,18 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
       tags: ['Moderation']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.allowlist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
 
   // Remove from list, newline delimited body
   server.delete<{
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/allowlist', {
     schema: {
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -115,7 +103,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
       tags: ['Moderation']
     }
   }, async (request, reply) => {
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.allowlist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
@@ -147,17 +135,14 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     Params: {
       actor: string
     }
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/:actor/blocklist', {
     schema: {
+      consumes: ['text/plain'],
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -166,7 +151,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.forActor(actor).blocklist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
@@ -176,17 +161,14 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     Params: {
       actor: string
     }
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/:actor/blocklist', {
     schema: {
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -195,7 +177,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.forActor(actor).blocklist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
@@ -227,17 +209,14 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     Params: {
       actor: string
     }
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/:actor/allowlist', {
     schema: {
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -246,7 +225,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.forActor(actor).allowlist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
@@ -256,17 +235,14 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     Params: {
       actor: string
     }
-    Body: {
-      accounts: string
-    }
+    Body: string
   }>('/:actor/allowlist', {
     schema: {
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        accounts: Type.String()
-      }),
+      consumes: ['text/plain'],
+      body: Type.String(),
       response: {
         200: Type.String()
       },
@@ -275,7 +251,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store) => async (ser
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const accounts = request.body.accounts.split('\n')
+    const accounts = request.body.split('\n')
     await store.forActor(actor).allowlist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
