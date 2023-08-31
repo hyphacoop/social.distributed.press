@@ -78,6 +78,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   })
 
   await server.register(v1Routes(cfg, store, apsystem), { prefix: '/v1' })
+
   await server.ready()
   return server
 }
@@ -104,7 +105,6 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
   }
 
   // Get info about the domain like the public key and configuration settings
-  server.get('/:domain', async (request, reply) => { })
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
   await server.register(followerRoutes(cfg, store))
