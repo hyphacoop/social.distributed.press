@@ -28,4 +28,40 @@ export class HookStore {
   async deleteHook (type: string): Promise<void> {
     await this.db.del(type)
   }
+
+  async setModerationQueued (hook: Hook): Promise<void> {
+    await this.setHook('moderationqueued', hook)
+  }
+
+  async getModerationQueued (): Promise<Hook | null> {
+    return await this.getHook('moderationqueued')
+  }
+
+  async deleteModerationQueued (): Promise<void> {
+    await this.deleteHook('moderationqueued')
+  }
+
+  async setOnApprovedHook (hook: Hook): Promise<void> {
+    await this.setHook('onapproved', hook)
+  }
+
+  async getOnApprovedHook (): Promise<Hook | null> {
+    return await this.getHook('onapproved')
+  }
+
+  async deleteOnApprovedHook (): Promise<void> {
+    await this.deleteHook('onapproved')
+  }
+
+  async setOnRejectedHook (hook: Hook): Promise<void> {
+    await this.setHook('onrejected', hook)
+  }
+
+  async getOnRejectedHook (): Promise<Hook | null> {
+    return await this.getHook('onrejected')
+  }
+
+  async deleteOnRejectedHook (): Promise<void> {
+    await this.deleteHook('onrejected')
+  }
 }
