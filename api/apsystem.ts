@@ -219,11 +219,13 @@ export default class ActivityPubSystem {
 
     for (const { rel, type, href } of links) {
       if (rel !== 'self') continue
-      if ((type !== 'application/activity+json') && (type !== 'application/ld+json')) continue
+      // TODO: Throw an error?
+      if (typeof type !== 'string') continue
+      if (!type.includes('application/activity+json') && !type.includes('application/ld+json')) continue
       return href
     }
 
-    throw new Error('Unable to find ActivityPub link from webmentions')
+    throw new Error(`Unable to find ActivityPub link from webmentions at ${mentionURL}`)
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {
