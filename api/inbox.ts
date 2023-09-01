@@ -62,7 +62,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     // TODO: check that the actor is the one that signed the request
     const activity = request.body
 
-    if (activity.actor !== submittedActor) throw new Error('Submitted activity must be from signed actor')
+    if (activity.actor !== submittedActor) throw new Error(`Submitted activity must be from signed actor. Activity: ${activity.actor} Request: ${submittedActor}`)
 
     await apsystem.ingestActivity(actor, activity)
 
