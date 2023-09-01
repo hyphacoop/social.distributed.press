@@ -77,7 +77,11 @@ export default class ActivityPubSystem {
       throw new Error(`Invalid HTTP signature for ${keyId}`)
     }
 
-    return keyId
+    // TODO: Handle getting the actor from something other than the key id??
+    const parsedActorURL = new URL(keyId)
+    parsedActorURL.hash = ''
+
+    return parsedActorURL.href
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
