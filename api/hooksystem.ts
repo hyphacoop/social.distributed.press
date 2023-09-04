@@ -1,12 +1,12 @@
 import type { APActivity } from 'activitypub-types'
 import type { BasicFetchParams, FetchLike } from './apsystem'
-import { HookStore } from '../store/HookStore'
+import Store from '../store/index'
 
 export default class HookSystem {
-  store: HookStore
+  store: Store
   fetch: FetchLike
 
-  constructor (store: HookStore, fetch: FetchLike = globalThis.fetch) {
+  constructor (store: Store, fetch: FetchLike = globalThis.fetch) {
     this.store = store
     this.fetch = fetch
   }
@@ -24,7 +24,7 @@ export default class HookSystem {
   }
 
   private async dispatchHook (hookType: string, actor: string, activity: APActivity): Promise<boolean> {
-    const hook = await this.store.getHook(hookType)
+    const hook = await this.store.forActor(actor).hooks.getHook(hookType)
 
     if (hook == null) {
       return false

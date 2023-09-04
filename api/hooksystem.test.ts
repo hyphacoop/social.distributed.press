@@ -1,6 +1,5 @@
 import test from 'ava'
 import HookSystem from './hooksystem'
-import { HookStore } from '../store/HookStore'
 
 test('HookSystem triggers ModerationQueued with expected parameters', async (t) => {
   // Mock the fetch API
@@ -14,22 +13,28 @@ test('HookSystem triggers ModerationQueued with expected parameters', async (t) 
     return { ok: true }
   }
 
-  // Mock the HookStore
-  const mockHookStore: any = {
-    getHook: async (hookType: string) => {
-      if (hookType === 'ModerationQueued') {
-        return {
-          url: 'https://example.com/hook',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+  // Mock the Store with actor-specific hook store
+  const mockStore: any = {
+    forActor: (actor: string) => {
+      return {
+        hooks: {
+          getHook: async (hookType: string) => {
+            if (hookType === 'ModerationQueued') {
+              return {
+                url: 'https://example.com/hook',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              }
+            }
+            return null
+          }
         }
       }
-      return null
     }
   }
 
   // Initialize the HookSystem with mocked dependencies
-  const hookSystem = new HookSystem(mockHookStore as HookStore, mockFetch)
+  const hookSystem = new HookSystem(mockStore, mockFetch)
 
   // Test dispatching the hook
   const result = await hookSystem.dispatchModerationQueued('actorId', {
@@ -40,6 +45,7 @@ test('HookSystem triggers ModerationQueued with expected parameters', async (t) 
 })
 
 test('HookSystem triggers OnApproved with expected parameters', async (t) => {
+  // Mock the fetch API
   const mockFetch: any = (url: string, options: any) => {
     t.is(url, 'https://example.com/hook-approved')
     t.deepEqual(options, {
@@ -50,21 +56,30 @@ test('HookSystem triggers OnApproved with expected parameters', async (t) => {
     return { ok: true }
   }
 
-  const mockHookStore: any = {
-    getHook: async (hookType: string) => {
-      if (hookType === 'OnApproved') {
-        return {
-          url: 'https://example.com/hook-approved',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+  // Mock the Store with actor-specific hook store
+  const mockStore: any = {
+    forActor: (actor: string) => {
+      return {
+        hooks: {
+          getHook: async (hookType: string) => {
+            if (hookType === 'OnApproved') {
+              return {
+                url: 'https://example.com/hook-approved',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              }
+            }
+            return null
+          }
         }
       }
-      return null
     }
   }
 
-  const hookSystem = new HookSystem(mockHookStore as HookStore, mockFetch)
+  // Initialize the HookSystem with mocked dependencies
+  const hookSystem = new HookSystem(mockStore, mockFetch)
 
+  // Test dispatching the hook
   const result = await hookSystem.dispatchOnApproved('actorId', {
     type: 'TestApproved'
   })
@@ -73,6 +88,7 @@ test('HookSystem triggers OnApproved with expected parameters', async (t) => {
 })
 
 test('HookSystem triggers OnRejected with expected parameters', async (t) => {
+  // Mock the fetch API
   const mockFetch: any = (url: string, options: any) => {
     t.is(url, 'https://example.com/hook-rejected')
     t.deepEqual(options, {
@@ -83,21 +99,30 @@ test('HookSystem triggers OnRejected with expected parameters', async (t) => {
     return { ok: true }
   }
 
-  const mockHookStore: any = {
-    getHook: async (hookType: string) => {
-      if (hookType === 'OnRejected') {
-        return {
-          url: 'https://example.com/hook-rejected',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+  // Mock the Store with actor-specific hook store
+  const mockStore: any = {
+    forActor: (actor: string) => {
+      return {
+        hooks: {
+          getHook: async (hookType: string) => {
+            if (hookType === 'OnRejected') {
+              return {
+                url: 'https://example.com/hook-rejected',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              }
+            }
+            return null
+          }
         }
       }
-      return null
     }
   }
 
-  const hookSystem = new HookSystem(mockHookStore as HookStore, mockFetch)
+  // Initialize the HookSystem with mocked dependencies
+  const hookSystem = new HookSystem(mockStore, mockFetch)
 
+  // Test dispatching the hook
   const result = await hookSystem.dispatchOnRejected('actorId', {
     type: 'TestRejected'
   })
