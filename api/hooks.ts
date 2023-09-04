@@ -1,6 +1,6 @@
 import { APIConfig, FastifyTypebox } from '.'
 import { Type } from '@sinclair/typebox'
-import { HookStore } from '../store/HookStore'
+import { HookStore, WebHookSchema } from '../store/HookStore'
 
 export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: FastifyTypebox): Promise<void> => {
   // For ModerationQueued
@@ -9,13 +9,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        url: Type.String({
-          format: 'uri'
-        }),
-        method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-        headers: Type.Record(Type.String(), Type.String())
-      }),
+      body: Type.Object(WebHookSchema),
       response: {
         200: Type.Object({
           message: Type.String()
@@ -39,13 +33,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       response: {
         200: Type.Object({
           message: Type.String(),
-          hook: Type.Object({
-            url: Type.String({
-              format: 'uri'
-            }),
-            method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-            headers: Type.Record(Type.String(), Type.String())
-          })
+          hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
           message: Type.String()
@@ -87,13 +75,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        url: Type.String({
-          format: 'uri'
-        }),
-        method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-        headers: Type.Record(Type.String(), Type.String())
-      }),
+      body: Type.Object(WebHookSchema),
       response: {
         200: Type.Object({
           message: Type.String()
@@ -116,13 +98,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       response: {
         200: Type.Object({
           message: Type.String(),
-          hook: Type.Object({
-            url: Type.String({
-              format: 'uri'
-            }),
-            method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-            headers: Type.Record(Type.String(), Type.String())
-          })
+          hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
           message: Type.String()
@@ -164,13 +140,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object({
-        url: Type.String({
-          format: 'uri'
-        }),
-        method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-        headers: Type.Record(Type.String(), Type.String())
-      }),
+      body: Type.Object(WebHookSchema),
       response: {
         200: Type.Object({
           message: Type.String()
@@ -193,13 +163,7 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       response: {
         200: Type.Object({
           message: Type.String(),
-          hook: Type.Object({
-            url: Type.String({
-              format: 'uri'
-            }),
-            method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
-            headers: Type.Record(Type.String(), Type.String())
-          })
+          hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
           message: Type.String()

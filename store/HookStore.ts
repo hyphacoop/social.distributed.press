@@ -1,9 +1,18 @@
 import { AbstractLevel } from 'abstract-level'
+import { Type } from '@sinclair/typebox'
 
 export interface Hook {
   url: string
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   headers: { [name: string]: string }
+}
+
+export const WebHookSchema = {
+  url: Type.String({
+    format: 'uri'
+  }),
+  method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
+  headers: Type.Record(Type.String(), Type.String())
 }
 
 export class HookStore {
