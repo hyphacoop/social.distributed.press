@@ -3,7 +3,6 @@ import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
 import HookSystem from './hooksystem'
-import { HookStore } from '../store/HookStore'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -31,16 +30,14 @@ export default class ActivityPubSystem {
   store: Store
   modCheck: ModerationChecker
   fetch: FetchLike
-  hookStore: HookStore
   hookSystem: HookSystem
 
-  constructor (publicURL: string, store: Store, hookStore: HookStore, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
+  constructor (publicURL: string, store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
     this.publicURL = publicURL
     this.store = store
     this.modCheck = modCheck
     this.fetch = fetch
-    this.hookStore = hookStore
-    this.hookSystem = new HookSystem(hookStore, fetch)
+    this.hookSystem = new HookSystem(store, fetch)
   }
 
   makeURL (path: string): string {
