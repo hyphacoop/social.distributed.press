@@ -33,7 +33,7 @@ export default class HookSystem {
     const request: BasicFetchParams = {
       url: hook.url,
       method: hook.method,
-      headers: hook.headers || {},
+      headers: (typeof hook.headers !== 'undefined' && hook.headers !== null) ? hook.headers : {},
       body: JSON.stringify(activity)
     }
 
