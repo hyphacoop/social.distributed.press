@@ -32,7 +32,6 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       }),
       response: {
         200: Type.Object({
-          message: Type.String(),
           hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
@@ -97,7 +96,6 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       }),
       response: {
         200: Type.Object({
-          message: Type.String(),
           hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
@@ -162,7 +160,6 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       }),
       response: {
         200: Type.Object({
-          message: Type.String(),
           hook: Type.Object(WebHookSchema)
         }),
         404: Type.Object({
