@@ -1,8 +1,9 @@
 import { APIConfig, FastifyTypebox } from '.'
 import { Type } from '@sinclair/typebox'
-import { HookStore, WebHookSchema } from '../store/HookStore'
+import Store from '../store/index'
+import { WebHookSchema } from '../store/HookStore'
 
-export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: FastifyTypebox): Promise<void> => {
+export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
   // For ModerationQueued
   server.put('/:actor/hooks/moderationqueued', {
     schema: {
@@ -19,9 +20,9 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    // const domain = request.params.domain;
+    const actor = request.params.actor
     const hook = request.body
-    await store.setModerationQueued(hook)
+    await store.forActor(actor).hooks.setModerationQueued(hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -42,7 +43,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const hook = await store.getModerationQueued()
+    const actor = request.params.actor
+    const hook = await store.forActor(actor).hooks.getModerationQueued()
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -64,7 +66,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    await store.deleteModerationQueued()
+    const actor = request.params.actor
+    await store.forActor(actor).hooks.deleteModerationQueued()
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 
@@ -84,8 +87,9 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
+    const actor = request.params.actor
     const hook = request.body
-    await store.setOnApprovedHook(hook)
+    await store.forActor(actor).hooks.setOnApprovedHook(hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -106,7 +110,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const hook = await store.getOnApprovedHook()
+    const actor = request.params.actor
+    const hook = await store.forActor(actor).hooks.getOnApprovedHook()
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -128,7 +133,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    await store.deleteOnApprovedHook()
+    const actor = request.params.actor
+    await store.forActor(actor).hooks.deleteOnApprovedHook()
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 
@@ -148,8 +154,9 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
+    const actor = request.params.actor
     const hook = request.body
-    await store.setOnRejectedHook(hook)
+    await store.forActor(actor).hooks.setOnRejectedHook(hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -170,7 +177,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const hook = await store.getOnRejectedHook()
+    const actor = request.params.actor
+    const hook = await store.forActor(actor).hooks.getOnRejectedHook()
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -192,7 +200,8 @@ export const hookRoutes = (cfg: APIConfig, store: HookStore) => async (server: F
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    await store.deleteOnRejectedHook()
+    const actor = request.params.actor
+    await store.forActor(actor).hooks.deleteOnRejectedHook()
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 }
