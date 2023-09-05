@@ -2,8 +2,9 @@ import { APIConfig, FastifyTypebox } from '.'
 import { Type } from '@sinclair/typebox'
 import Store from '../store/index'
 import { WebHookSchema } from '../store/HookStore'
+import HookSystem from './hooksystem'
 
-export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
+export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem) => async (server: FastifyTypebox): Promise<void> => {
   // For ModerationQueued
   server.put('/:actor/hooks/moderationqueued', {
     schema: {
@@ -22,7 +23,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
   }, async (request, reply) => {
     const actor = request.params.actor
     const hook = request.body
-    await store.forActor(actor).hooks.setModerationQueued(hook)
+    await hookSystem.setModerationQueued(actor, hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -44,7 +45,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    const hook = await store.forActor(actor).hooks.getModerationQueued()
+    const hook = await hookSystem.getModerationQueued(actor)
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -67,7 +68,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    await store.forActor(actor).hooks.deleteModerationQueued()
+    await hookSystem.deleteModerationQueued(actor)
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 
@@ -89,7 +90,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
   }, async (request, reply) => {
     const actor = request.params.actor
     const hook = request.body
-    await store.forActor(actor).hooks.setOnApprovedHook(hook)
+    await hookSystem.setOnApprovedHook(actor, hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -111,7 +112,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    const hook = await store.forActor(actor).hooks.getOnApprovedHook()
+    const hook = await hookSystem.getOnApprovedHook(actor)
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -134,7 +135,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    await store.forActor(actor).hooks.deleteOnApprovedHook()
+    await hookSystem.deleteOnApprovedHook(actor)
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 
@@ -156,7 +157,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
   }, async (request, reply) => {
     const actor = request.params.actor
     const hook = request.body
-    await store.forActor(actor).hooks.setOnRejectedHook(hook)
+    await hookSystem.setOnRejectedHook(actor, hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -178,7 +179,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    const hook = await store.forActor(actor).hooks.getOnRejectedHook()
+    const hook = await hookSystem.getOnRejectedHook(actor)
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -201,7 +202,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    await store.forActor(actor).hooks.deleteOnRejectedHook()
+    await hookSystem.deleteOnRejectedHook(actor)
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 }

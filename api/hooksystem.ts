@@ -1,6 +1,7 @@
 import type { APActivity } from 'activitypub-types'
 import type { BasicFetchParams, FetchLike } from './apsystem'
 import Store from '../store/index'
+import { Hook } from '../store/HookStore'
 
 export default class HookSystem {
   store: Store
@@ -9,6 +10,42 @@ export default class HookSystem {
   constructor (store: Store, fetch: FetchLike = globalThis.fetch) {
     this.store = store
     this.fetch = fetch
+  }
+
+  async setModerationQueued (actor: string, hook: Hook): Promise<void> {
+    await this.store.forActor(actor).hooks.setModerationQueued(hook)
+  }
+
+  async getModerationQueued (actor: string): Promise<Hook | null> {
+    return await this.store.forActor(actor).hooks.getModerationQueued()
+  }
+
+  async deleteModerationQueued (actor: string): Promise<void> {
+    await this.store.forActor(actor).hooks.deleteModerationQueued()
+  }
+
+  async setOnApprovedHook (actor: string, hook: Hook): Promise<void> {
+    await this.store.forActor(actor).hooks.setOnApprovedHook(hook)
+  }
+
+  async getOnApprovedHook (actor: string): Promise<Hook | null> {
+    return await this.store.forActor(actor).hooks.getOnApprovedHook()
+  }
+
+  async deleteOnApprovedHook (actor: string): Promise<void> {
+    await this.store.forActor(actor).hooks.deleteOnApprovedHook()
+  }
+
+  async setOnRejectedHook (actor: string, hook: Hook): Promise<void> {
+    await this.store.forActor(actor).hooks.setOnRejectedHook(hook)
+  }
+
+  async getOnRejectedHook (actor: string): Promise<Hook | null> {
+    return await this.store.forActor(actor).hooks.getOnRejectedHook()
+  }
+
+  async deleteOnRejectedHook (actor: string): Promise<void> {
+    await this.store.forActor(actor).hooks.deleteOnRejectedHook()
   }
 
   async dispatchModerationQueued (actor: string, activity: APActivity): Promise<boolean> {
