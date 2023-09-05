@@ -247,16 +247,13 @@ export default class ActivityPubSystem {
     const actorStore = this.store.forActor(fromActor)
     // TODO: trigger hooks
     await actorStore.inbox.add(activity)
-    await this.hookSystem.dispatchModerationQueued(fromActor, activity)
 
     if (moderationState === BLOCKED) {
       await this.rejectActivity(fromActor, activityId)
-      await this.hookSystem.dispatchOnRejected(fromActor, activity)
     } else if (moderationState === ALLOWED) {
       await this.approveActivity(fromActor, activityId)
-      await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else {
-      // TODO: trigger hook
+      await this.hookSystem.dispatchModerationQueued(fromActor, activity)
     }
   }
 
@@ -271,6 +268,7 @@ export default class ActivityPubSystem {
       await this.acceptFollow(fromActor, activity)
     }
     await actorStore.inbox.remove(activityId)
+    await this.hookSystem.dispatchOnApproved(fromActor, activity)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
@@ -284,6 +282,7 @@ export default class ActivityPubSystem {
       await this.acceptFollow(fromActor, activity)
     }
     await actorStore.inbox.remove(activityId)
+    await this.hookSystem.dispatchOnRejected(fromActor, activity)
   }
 
   async notifyFollowers (fromActor: string, activity: APActivity): Promise<void> {

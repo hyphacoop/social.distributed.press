@@ -10,7 +10,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object(WebHookSchema),
+      body: WebHookSchema,
       response: {
         200: Type.Object({
           message: Type.String()
@@ -33,7 +33,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       }),
       response: {
         200: Type.Object({
-          hook: Type.Object(WebHookSchema)
+          hook: WebHookSchema
         }),
         404: Type.Object({
           message: Type.String()
@@ -77,7 +77,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object(WebHookSchema),
+      body: WebHookSchema,
       response: {
         200: Type.Object({
           message: Type.String()
@@ -100,7 +100,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       }),
       response: {
         200: Type.Object({
-          hook: Type.Object(WebHookSchema)
+          hook: WebHookSchema
         }),
         404: Type.Object({
           message: Type.String()
@@ -144,7 +144,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       params: Type.Object({
         actor: Type.String()
       }),
-      body: Type.Object(WebHookSchema),
+      body: WebHookSchema,
       response: {
         200: Type.Object({
           message: Type.String()
@@ -167,7 +167,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store) => async (server: Fasti
       }),
       response: {
         200: Type.Object({
-          hook: Type.Object(WebHookSchema)
+          hook: WebHookSchema
         }),
         404: Type.Object({
           message: Type.String()

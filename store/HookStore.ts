@@ -7,13 +7,13 @@ export interface Hook {
   headers: { [name: string]: string }
 }
 
-export const WebHookSchema = {
+export const WebHookSchema = Type.Object({
   url: Type.String({
     format: 'uri'
   }),
   method: Type.Union([Type.Literal('GET'), Type.Literal('POST'), Type.Literal('PUT'), Type.Literal('DELETE')]),
   headers: Type.Record(Type.String(), Type.String())
-}
+})
 
 export class HookStore {
   db: AbstractLevel<any, string, any>
