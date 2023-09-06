@@ -2,6 +2,7 @@ import type { APActivity, APActor, APCollection } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
+import HookSystem from './hooksystem'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -29,12 +30,14 @@ export default class ActivityPubSystem {
   store: Store
   modCheck: ModerationChecker
   fetch: FetchLike
+  hookSystem: HookSystem
 
-  constructor (publicURL: string, store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch) {
+  constructor (publicURL: string, store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch, hookSystem: HookSystem = new HookSystem(store, fetch)) {
     this.publicURL = publicURL
     this.store = store
     this.modCheck = modCheck
     this.fetch = fetch
+    this.hookSystem = hookSystem
   }
 
   makeURL (path: string): string {
@@ -256,7 +259,7 @@ export default class ActivityPubSystem {
     } else if (moderationState === ALLOWED) {
       await this.approveActivity(fromActor, activityId)
     } else {
-      // TODO: trigger hook
+      await this.hookSystem.dispatchModerationQueued(fromActor, activity)
     }
   }
 
@@ -271,6 +274,7 @@ export default class ActivityPubSystem {
       await this.acceptFollow(fromActor, activity)
     }
     await actorStore.inbox.remove(activityId)
+    await this.hookSystem.dispatchOnApproved(fromActor, activity)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
@@ -284,6 +288,7 @@ export default class ActivityPubSystem {
       await this.acceptFollow(fromActor, activity)
     }
     await actorStore.inbox.remove(activityId)
+    await this.hookSystem.dispatchOnRejected(fromActor, activity)
   }
 
   async notifyFollowers (fromActor: string, activity: APActivity): Promise<void> {

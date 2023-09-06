@@ -17,6 +17,7 @@ import { MemoryLevel } from 'memory-level'
 
 import Store from '../store/index.js'
 import ActivityPubSystem from './apsystem.js'
+import HookSystem from './hooksystem.js'
 import { ServerI } from '../index.js'
 import { inboxRoutes } from './inbox.js'
 import { outboxRoutes } from './outbox.js'
@@ -58,6 +59,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   const store = new Store(db)
   const modCheck = new ModerationChecker(store)
   const apsystem = new ActivityPubSystem(cfg.publicURL, store, modCheck)
+  const hookSystem = new HookSystem(store)
 
   const parser = server.getDefaultJsonParser('ignore', 'ignore')
 
@@ -85,13 +87,13 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     return 'ok\n'
   })
 
-  await server.register(v1Routes(cfg, store, apsystem), { prefix: '/v1' })
+  await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
 
   await server.ready()
   return server
 }
 
-const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
+const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hookSystem: HookSystem) => async (server: FastifyTypebox): Promise<void> => {
   if (cfg.usePrometheus ?? false) {
     await server.register(metrics, { endpoint: '/metrics' })
   }
@@ -117,7 +119,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => 
   await server.register(outboxRoutes(cfg, store, apsystem))
   await server.register(followerRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
-  await server.register(hookRoutes(cfg, store))
+  await server.register(hookRoutes(cfg, store, hookSystem))
 
   if (cfg.useSwagger ?? false) {
     server.swagger()
