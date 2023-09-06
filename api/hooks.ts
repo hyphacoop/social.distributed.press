@@ -90,7 +90,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
   }, async (request, reply) => {
     const actor = request.params.actor
     const hook = request.body
-    await hookSystem.setOnApprovedHook(actor, hook)
+    await hookSystem.setOnApproved(actor, hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -112,7 +112,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    const hook = await hookSystem.getOnApprovedHook(actor)
+    const hook = await hookSystem.getOnApproved(actor)
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -135,7 +135,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    await hookSystem.deleteOnApprovedHook(actor)
+    await hookSystem.deleteOnApproved(actor)
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 
@@ -157,7 +157,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
   }, async (request, reply) => {
     const actor = request.params.actor
     const hook = request.body
-    await hookSystem.setOnRejectedHook(actor, hook)
+    await hookSystem.setOnRejected(actor, hook)
     return await reply.send({ message: 'Hook set successfully' })
   })
 
@@ -179,7 +179,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    const hook = await hookSystem.getOnRejectedHook(actor)
+    const hook = await hookSystem.getOnRejected(actor)
     if (hook != null) {
       return await reply.send({ message: 'Hook retrieved successfully', hook })
     } else {
@@ -202,7 +202,7 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
     }
   }, async (request, reply) => {
     const actor = request.params.actor
-    await hookSystem.deleteOnRejectedHook(actor)
+    await hookSystem.deleteOnRejected(actor)
     return await reply.send({ message: 'Hook deleted successfully' })
   })
 }

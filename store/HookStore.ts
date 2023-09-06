@@ -22,11 +22,11 @@ export class HookStore {
     this.db = db
   }
 
-  async setHook (type: string, hook: Hook): Promise<void> {
+  async set (type: string, hook: Hook): Promise<void> {
     await this.db.put(type, hook)
   }
 
-  async getHook (type: string): Promise<Hook | null> {
+  async get (type: string): Promise<Hook | null> {
     try {
       return await this.db.get(type)
     } catch (error) {
@@ -34,43 +34,43 @@ export class HookStore {
     }
   }
 
-  async deleteHook (type: string): Promise<void> {
+  async delete (type: string): Promise<void> {
     await this.db.del(type)
   }
 
   async setModerationQueued (hook: Hook): Promise<void> {
-    await this.setHook('moderationqueued', hook)
+    await this.set('moderationqueued', hook)
   }
 
   async getModerationQueued (): Promise<Hook | null> {
-    return await this.getHook('moderationqueued')
+    return await this.get('moderationqueued')
   }
 
   async deleteModerationQueued (): Promise<void> {
-    await this.deleteHook('moderationqueued')
+    await this.delete('moderationqueued')
   }
 
-  async setOnApprovedHook (hook: Hook): Promise<void> {
-    await this.setHook('onapproved', hook)
+  async setOnApproved (hook: Hook): Promise<void> {
+    await this.set('onapproved', hook)
   }
 
-  async getOnApprovedHook (): Promise<Hook | null> {
-    return await this.getHook('onapproved')
+  async getOnApproved (): Promise<Hook | null> {
+    return await this.get('onapproved')
   }
 
-  async deleteOnApprovedHook (): Promise<void> {
-    await this.deleteHook('onapproved')
+  async deleteOnApproved (): Promise<void> {
+    await this.delete('onapproved')
   }
 
-  async setOnRejectedHook (hook: Hook): Promise<void> {
-    await this.setHook('onrejected', hook)
+  async setOnRejected (hook: Hook): Promise<void> {
+    await this.set('onrejected', hook)
   }
 
-  async getOnRejectedHook (): Promise<Hook | null> {
-    return await this.getHook('onrejected')
+  async getOnRejected (): Promise<Hook | null> {
+    return await this.get('onrejected')
   }
 
-  async deleteOnRejectedHook (): Promise<void> {
-    await this.deleteHook('onrejected')
+  async deleteOnRejected (): Promise<void> {
+    await this.delete('onrejected')
   }
 }

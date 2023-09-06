@@ -24,28 +24,28 @@ export default class HookSystem {
     await this.store.forActor(actor).hooks.deleteModerationQueued()
   }
 
-  async setOnApprovedHook (actor: string, hook: Hook): Promise<void> {
-    await this.store.forActor(actor).hooks.setOnApprovedHook(hook)
+  async setOnApproved (actor: string, hook: Hook): Promise<void> {
+    await this.store.forActor(actor).hooks.setOnApproved(hook)
   }
 
-  async getOnApprovedHook (actor: string): Promise<Hook | null> {
-    return await this.store.forActor(actor).hooks.getOnApprovedHook()
+  async getOnApproved (actor: string): Promise<Hook | null> {
+    return await this.store.forActor(actor).hooks.getOnApproved()
   }
 
-  async deleteOnApprovedHook (actor: string): Promise<void> {
-    await this.store.forActor(actor).hooks.deleteOnApprovedHook()
+  async deleteOnApproved (actor: string): Promise<void> {
+    await this.store.forActor(actor).hooks.deleteOnApproved()
   }
 
-  async setOnRejectedHook (actor: string, hook: Hook): Promise<void> {
-    await this.store.forActor(actor).hooks.setOnRejectedHook(hook)
+  async setOnRejected (actor: string, hook: Hook): Promise<void> {
+    await this.store.forActor(actor).hooks.setOnRejected(hook)
   }
 
-  async getOnRejectedHook (actor: string): Promise<Hook | null> {
-    return await this.store.forActor(actor).hooks.getOnRejectedHook()
+  async getOnRejected (actor: string): Promise<Hook | null> {
+    return await this.store.forActor(actor).hooks.getOnRejected()
   }
 
-  async deleteOnRejectedHook (actor: string): Promise<void> {
-    await this.store.forActor(actor).hooks.deleteOnRejectedHook()
+  async deleteOnRejected (actor: string): Promise<void> {
+    await this.store.forActor(actor).hooks.deleteOnRejected()
   }
 
   async dispatchModerationQueued (actor: string, activity: APActivity): Promise<boolean> {
@@ -61,7 +61,7 @@ export default class HookSystem {
   }
 
   private async dispatchHook (hookType: string, actor: string, activity: APActivity): Promise<boolean> {
-    const hook = await this.store.forActor(actor).hooks.getHook(hookType)
+    const hook = await this.store.forActor(actor).hooks.get(hookType)
 
     if (hook == null) {
       return false

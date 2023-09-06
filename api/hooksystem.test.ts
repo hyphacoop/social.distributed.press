@@ -18,7 +18,7 @@ test('HookSystem triggers ModerationQueued with expected parameters', async (t) 
     forActor: (actor: string) => {
       return {
         hooks: {
-          getHook: async (hookType: string) => {
+          get: async (hookType: string) => {
             if (hookType === 'ModerationQueued') {
               return {
                 url: 'https://example.com/hook',
@@ -61,7 +61,7 @@ test('HookSystem triggers OnApproved with expected parameters', async (t) => {
     forActor: (actor: string) => {
       return {
         hooks: {
-          getHook: async (hookType: string) => {
+          get: async (hookType: string) => {
             if (hookType === 'OnApproved') {
               return {
                 url: 'https://example.com/hook-approved',
@@ -104,7 +104,7 @@ test('HookSystem triggers OnRejected with expected parameters', async (t) => {
     forActor: (actor: string) => {
       return {
         hooks: {
-          getHook: async (hookType: string) => {
+          get: async (hookType: string) => {
             if (hookType === 'OnRejected') {
               return {
                 url: 'https://example.com/hook-rejected',
