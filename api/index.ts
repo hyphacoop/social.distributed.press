@@ -58,8 +58,8 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   }).withTypeProvider<TypeBoxTypeProvider>()
   const store = new Store(db)
   const modCheck = new ModerationChecker(store)
-  const apsystem = new ActivityPubSystem(cfg.publicURL, store, modCheck)
   const hookSystem = new HookSystem(store)
+  const apsystem = new ActivityPubSystem(cfg.publicURL, store, modCheck, hookSystem)
 
   const parser = server.getDefaultJsonParser('ignore', 'ignore')
 

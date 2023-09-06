@@ -32,7 +32,13 @@ export default class ActivityPubSystem {
   fetch: FetchLike
   hookSystem: HookSystem
 
-  constructor (publicURL: string, store: Store, modCheck: ModerationChecker, fetch: FetchLike = globalThis.fetch, hookSystem: HookSystem = new HookSystem(store, fetch)) {
+  constructor (
+    publicURL: string,
+    store: Store,
+    modCheck: ModerationChecker,
+    hookSystem: HookSystem,
+    fetch: FetchLike = globalThis.fetch
+  ) {
     this.publicURL = publicURL
     this.store = store
     this.modCheck = modCheck
