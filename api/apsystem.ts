@@ -159,7 +159,7 @@ export default class ActivityPubSystem {
 
     // Check if response has error and throw one if so
     if (!response.ok) {
-      throw new Error(`Cannot fetch actor data: http status ${response.status} - ${await response.text()}`)
+      throw new Error(`Cannot fetch actor data for ${fromActor}: http status ${response.status} - ${await response.text()}`)
     }
   }
 
@@ -173,7 +173,7 @@ export default class ActivityPubSystem {
 
     // throq if response not ok or if inbox isn't a string
     if (!response.ok) {
-      throw new Error(`Cannot fetch actor data: http status ${response.status} - ${await response.text()}`)
+      throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
     }
 
     // TODO: Support html pages with a link rel in them
@@ -197,7 +197,7 @@ export default class ActivityPubSystem {
     const { preferredUsername } = actor
 
     if (preferredUsername === undefined) {
-      throw new Error('Could not generate webmention name for actor, missing preferredUsername field')
+      throw new Error(`Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
     }
     const domain = new URL(actorURL).host
 
