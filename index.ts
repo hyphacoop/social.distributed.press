@@ -7,7 +7,8 @@ const paths = envPaths('social.distributed.press')
 const argv = yargs(hideBin(process.argv)).options({
   port: { type: 'number' },
   host: { type: 'string' },
-  storage: { type: 'string' }
+  storage: { type: 'string' },
+  publicURL: { type: 'string' }
 }).parseSync()
 
 export interface ServerI {
