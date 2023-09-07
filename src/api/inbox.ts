@@ -26,7 +26,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor } = request.params
     const orderedItems = await store.forActor(actor).inbox.list()
-    const orderedCollection = {
+    const orderedCollection: APOrderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'OrderedCollection',
       id: request.url,
