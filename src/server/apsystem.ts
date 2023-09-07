@@ -11,7 +11,7 @@ import {
   ALLOWED
 } from './moderation.js'
 
-import type Store from '../store/index.js'
+import type Store from './store/index.js'
 import { makeSigner } from '../keypair'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'

@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
 import type Store from '../store'
-import type ActivityPubSystem from './apsystem.js'
+import type ActivityPubSystem from '../apsystem.js'
 
 export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Get list of followers as JSON-LD

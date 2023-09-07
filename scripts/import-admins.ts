@@ -3,7 +3,7 @@ import { hideBin } from 'yargs/helpers'
 import envPaths from 'env-paths'
 import { Level } from 'level'
 
-import Store from '../store/index.js'
+import Store from '../src/server/store/index.js'
 
 const paths = envPaths('social.distributed.press')
 

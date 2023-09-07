@@ -2,15 +2,15 @@
   "name": "distributed-press-social",
   "version": "0.0.0",
   "description": "API for the Distributed Press Social Inbox",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "generate-identity": "ts-node-esm scripts/generate-identity.ts",
     "import-blocklist": "ts-node-esm scripts/import-blocklist.ts",
     "import-admins": "ts-node-esm scripts/import-admins.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
-    "start": "ts-node-esm index.ts | pino-pretty -c -t",
-    "build": "npm run clean && tsc",
+    "start": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
+    "build": "tsc",
     "test": "ava --concurrency 1 --timeout=1m"
   },
   "repository": {

@@ -1,7 +1,7 @@
 import type { APActivity } from 'activitypub-types'
 import type { BasicFetchParams, FetchLike } from './apsystem'
-import Store from '../store/index'
-import { Hook } from '../store/HookStore'
+import Store from './store/index'
+import { Hook } from './store/HookStore'
 
 export default class HookSystem {
   store: Store

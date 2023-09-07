@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
 import Store from '../store'
-import type ActivityPubSystem from './apsystem.js'
+import type ActivityPubSystem from '../apsystem.js'
 
 // TODO: Add ability to clear outbox items
 

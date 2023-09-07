@@ -1,5 +1,4 @@
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-
 import fastify, {
   FastifyBaseLogger,
   RawReplyDefaultExpression,
@@ -10,15 +9,20 @@ import fastify, {
 import swagger from '@fastify/swagger'
 import swagger_ui from '@fastify/swagger-ui'
 import metrics from 'fastify-metrics'
+
 import path from 'node:path'
 import envPaths from 'env-paths'
+
 import { Level } from 'level'
 import { MemoryLevel } from 'memory-level'
 
 import Store from '../store/index.js'
-import ActivityPubSystem from './apsystem.js'
-import HookSystem from './hooksystem.js'
+import ActivityPubSystem from '../apsystem.js'
+import HookSystem from '../hooksystem.js'
+import { ModerationChecker } from '../moderation.js'
+
 import { ServerI } from '../index.js'
+
 import { inboxRoutes } from './inbox.js'
 import { outboxRoutes } from './outbox.js'
 import { creationRoutes } from './creation.js'
@@ -26,7 +30,6 @@ import { blockAllowListRoutes } from './blockallowlist.js'
 import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
-import { ModerationChecker } from './moderation.js'
 
 export const paths = envPaths('distributed-press')
 

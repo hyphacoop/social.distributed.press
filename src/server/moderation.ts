@@ -1,4 +1,4 @@
-import Store from '../store/index.js'
+import Store from './store/index.js'
 
 export const BLOCKED = 'blocked'
 export const ALLOWED = 'allowed'

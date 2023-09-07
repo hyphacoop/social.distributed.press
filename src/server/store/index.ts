@@ -1,7 +1,7 @@
 import { Type, Static } from '@sinclair/typebox'
 import { AbstractLevel } from 'abstract-level'
 
-import { KeyPairSchema } from '../keypair.js'
+import { KeyPairSchema } from '../../keypair.js'
 import { ActorStore } from './ActorStore'
 import { AccountListStore } from './AccountListStore'
 

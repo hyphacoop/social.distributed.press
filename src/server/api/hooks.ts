@@ -2,7 +2,7 @@ import { APIConfig, FastifyTypebox } from '.'
 import { Type } from '@sinclair/typebox'
 import Store from '../store/index'
 import { WebHookSchema } from '../store/HookStore'
-import HookSystem from './hooksystem'
+import HookSystem from '../hooksystem'
 
 export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem) => async (server: FastifyTypebox): Promise<void> => {
   // For ModerationQueued
