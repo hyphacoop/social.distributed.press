@@ -21,7 +21,8 @@ export interface ServerI {
 const port = Number(argv.port ?? process.env.PORT ?? '8080')
 const host = argv.host ?? process.env.HOST ?? 'localhost'
 const storage = argv.storage ?? paths.data
-const publicURL = `http://${host}:${port}`
+const publicURL = argv.publicURL ?? `http://${host}:${port}`
+
 const cfg: ServerI = {
   port,
   host,

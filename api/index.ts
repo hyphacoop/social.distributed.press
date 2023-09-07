@@ -91,6 +91,8 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
 
   await server.ready()
+
+  server.log.info(cfg)
   return server
 }
 
