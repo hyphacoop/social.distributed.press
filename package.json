@@ -1,6 +1,6 @@
 {
   "name": "distributed-press-social",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "API for the Distributed Press Social Inbox",
   "main": "dist/index.js",
   "type": "module",
@@ -9,7 +9,9 @@
     "import-blocklist": "ts-node-esm scripts/import-blocklist.ts",
     "import-admins": "ts-node-esm scripts/import-admins.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
-    "start": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
+    "dev": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
+    "start": "node dist/server/index.js | pino-pretty -c -t",
+    "prestart": "npm run build",
     "build": "tsc",
     "test": "ava --concurrency 1 --timeout=1m"
   },

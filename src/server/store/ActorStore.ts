@@ -1,8 +1,9 @@
 import { AbstractLevel } from 'abstract-level'
-import { ActorInfo } from './index'
-import { ActivityStore } from './ActivityStore'
-import { AccountListStore } from './AccountListStore'
-import { HookStore } from './HookStore'
+
+import { ActorInfo } from './index.js'
+import { ActivityStore } from './ActivityStore.js'
+import { AccountListStore } from './AccountListStore.js'
+import { HookStore } from './HookStore.js'
 
 export class ActorStore {
   db: AbstractLevel<any, string, any>

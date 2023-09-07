@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 
-import type { APIConfig, FastifyTypebox } from '.'
-import Store, { ActorInfo, ActorInfoSchema } from '../store'
+import type { APIConfig, FastifyTypebox } from './index.js'
+import Store, { ActorInfo, ActorInfoSchema } from '../store/index.js'
 
 export const creationRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox

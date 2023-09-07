@@ -2,8 +2,8 @@ import { Type, Static } from '@sinclair/typebox'
 import { AbstractLevel } from 'abstract-level'
 
 import { KeyPairSchema } from '../../keypair.js'
-import { ActorStore } from './ActorStore'
-import { AccountListStore } from './AccountListStore'
+import { ActorStore } from './ActorStore.js'
+import { AccountListStore } from './AccountListStore.js'
 
 export const ActorInfoSchema = Type.Object({
   // The actor for the domain inbox

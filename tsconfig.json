@@ -7,12 +7,14 @@
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
-    "outDir": "./dist",
+    "esModuleInterop": true,
     "sourceMap": true,
-    "rootDir": ".",
-    "typeRoots": ["./@types"],
+    "declaration": true,
     "strict": true,
-    "esModuleInterop": true
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "typeRoots": ["./@types"]
   },
   "ts-node": {
     "files": true,

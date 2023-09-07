@@ -2,7 +2,7 @@ import type { APActivity, APActor, APCollection } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
-import HookSystem from './hooksystem'
+import HookSystem from './hooksystem.js'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -12,7 +12,7 @@ import {
 } from './moderation.js'
 
 import type Store from './store/index.js'
-import { makeSigner } from '../keypair'
+import { makeSigner } from '../keypair.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
 
