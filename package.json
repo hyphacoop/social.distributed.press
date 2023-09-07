@@ -7,6 +7,7 @@
   "scripts": {
     "generate-identity": "ts-node-esm scripts/generate-identity.ts",
     "import-blocklist": "ts-node-esm scripts/import-blocklist.ts",
+    "import-admins": "ts-node-esm scripts/import-admins.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
     "start": "ts-node-esm index.ts | pino-pretty -c -t",
     "build": "npm run clean && tsc",

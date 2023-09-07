@@ -26,6 +26,10 @@ export class ModerationChecker {
       return BLOCKED
     }
 
+    if (await this.store.admins.matches(pattern)) {
+      return ALLOWED
+    }
+
     // Check if in the global blocklist
     if (await this.store.blocklist.matches(pattern)) {
       return BLOCKED

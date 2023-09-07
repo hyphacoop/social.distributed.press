@@ -23,6 +23,7 @@ import { inboxRoutes } from './inbox.js'
 import { outboxRoutes } from './outbox.js'
 import { creationRoutes } from './creation.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
+import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
 import { ModerationChecker } from './moderation.js'
@@ -119,6 +120,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
   await server.register(outboxRoutes(cfg, store, apsystem))
   await server.register(followerRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store))
+  await server.register(adminRoutes(cfg, store))
   await server.register(hookRoutes(cfg, store, hookSystem))
 
   if (cfg.useSwagger ?? false) {

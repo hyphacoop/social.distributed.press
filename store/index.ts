@@ -20,6 +20,7 @@ export default class Store {
   actorsDb: AbstractLevel<any, string, any>
   blocklist: AccountListStore
   allowlist: AccountListStore
+  admins: AccountListStore
 
   // TODO: Have store config which just needs the specific fields for the store
   constructor (db: AbstractLevel<any, string, any>) {
@@ -34,6 +35,10 @@ export default class Store {
       valueEncoding: 'json'
     })
     this.allowlist = new AccountListStore(allowlistDb)
+    const adminsDb = this.db.sublevel('admins', {
+      valueEncoding: 'json'
+    })
+    this.admins = new AccountListStore(adminsDb)
   }
 
   forActor (domain: string): ActorStore {
