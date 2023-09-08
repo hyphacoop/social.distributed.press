@@ -120,13 +120,13 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
     })
   }
 
-  await server.register(creationRoutes(cfg, store))
+  await server.register(creationRoutes(cfg, store, apsystem))
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(outboxRoutes(cfg, store, apsystem))
   await server.register(followerRoutes(cfg, store, apsystem))
-  await server.register(blockAllowListRoutes(cfg, store))
-  await server.register(adminRoutes(cfg, store))
-  await server.register(hookRoutes(cfg, store, hookSystem))
+  await server.register(blockAllowListRoutes(cfg, store, apsystem))
+  await server.register(adminRoutes(cfg, store, apsystem))
+  await server.register(hookRoutes(cfg, store, hookSystem, apsystem))
 
   if (cfg.useSwagger ?? false) {
     server.swagger()

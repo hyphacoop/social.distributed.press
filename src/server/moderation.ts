@@ -13,17 +13,19 @@ export class ModerationChecker {
     this.store = store
   }
 
-  async check (pattern: string, actor: string): Promise<ModerationState> {
-    const actorStore = this.store.forActor(actor)
+  async check (pattern: string, actor?: string): Promise<ModerationState> {
+    if (typeof actor === 'string') {
+      const actorStore = this.store.forActor(actor)
 
-    // Check if in the actor-specific allowlist
-    if (await actorStore.allowlist.matches(pattern)) {
-      return ALLOWED
-    }
+      // Check if in the actor-specific allowlist
+      if (await actorStore.allowlist.matches(pattern)) {
+        return ALLOWED
+      }
 
-    // Check if in the actor-specific blocklist
-    if (await actorStore.blocklist.matches(pattern)) {
-      return BLOCKED
+      // Check if in the actor-specific blocklist
+      if (await actorStore.blocklist.matches(pattern)) {
+        return BLOCKED
+      }
     }
 
     if (await this.store.admins.matches(pattern)) {
@@ -43,7 +45,7 @@ export class ModerationChecker {
     return QUEUE
   }
 
-  async isAllowed (pattern: string, actor: string): Promise<boolean> {
+  async isAllowed (pattern: string, actor?: string): Promise<boolean> {
     const state = await this.check(pattern, actor)
 
     return state !== BLOCKED

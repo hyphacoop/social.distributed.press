@@ -22,13 +22,18 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
       // TODO: Typebox apoactivity
       body: Type.Object({}),
       response: {
-        200: Type.String()
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'ActivityPub outbox for notifying followers',
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
     const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
 
     const activity = request.body
 
@@ -41,7 +46,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
       actor: string
       id: string
     }
-    Body: APActivity
+    Reply: APActivity | string
   }>('/:actor/outbox/:id', {
     schema: {
       params: Type.Object({
@@ -50,14 +55,20 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
       }),
       response: {
       // TODO: typebox apactivity
-        200: Type.Object({})
+        200: Type.Object({}),
+        409: Type.String()
       },
       description: 'Get items that got sent out by the instance. Fetched by other instances to verify accept/rejects for follows.',
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
     const { actor, id } = request.params
-    const activity = apsystem.getOutboxItem(actor, id)
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
+    const activity = await apsystem.getOutboxItem(actor, id)
 
     return await reply.send(activity)
   })

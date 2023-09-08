@@ -50,7 +50,26 @@ export default class ActivityPubSystem {
     return this.publicURL + path
   }
 
-  async verifySignedRequest (fromActor: string, request: FastifyRequest): Promise<string> {
+  async hasPermissionActorRequest (forActor: string, request: FastifyRequest): Promise<boolean> {
+    const resolvedActor = await this.verifySignedRequest(request, forActor)
+
+    if (resolvedActor === forActor) {
+      return true
+    }
+
+    return await this.store.admins.matches(resolvedActor)
+  }
+
+  async hasAdminPermissionForRequest (request: FastifyRequest): Promise<boolean> {
+    const resolvedActor = await this.verifySignedRequest(request)
+
+    if (await this.store.blocklist.matches(resolvedActor)) {
+      return false
+    }
+    return await this.store.admins.matches(resolvedActor)
+  }
+
+  async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
   // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
     const signature = signatureParser.parse({ url, method, headers })

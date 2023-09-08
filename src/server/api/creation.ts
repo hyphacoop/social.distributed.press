@@ -2,14 +2,15 @@ import { Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from './index.js'
 import Store, { ActorInfo, ActorInfoSchema } from '../store/index.js'
+import ActivityPubSystem from '../apsystem.js'
 
-export const creationRoutes = (cfg: APIConfig, store: Store) => async (server: FastifyTypebox): Promise<void> => {
+export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
   server.post<{
     Params: {
       actor: string
     }
-    Reply: ActorInfo
+    Reply: ActorInfo | string
     Body: ActorInfo
   }>('/:actor', {
     schema: {
@@ -18,13 +19,20 @@ export const creationRoutes = (cfg: APIConfig, store: Store) => async (server: F
       }),
       body: ActorInfoSchema,
       response: {
-        200: ActorInfoSchema
+        200: ActorInfoSchema,
+        409: Type.String()
       },
       description: 'Register a new actor for the social inbox',
       tags: ['Creation']
     }
   }, async (request, reply) => {
     const { actor } = request.params
+
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     const info = request.body
     await store.forActor(actor).setInfo(info)
     return await reply.send(info)
@@ -35,20 +43,26 @@ export const creationRoutes = (cfg: APIConfig, store: Store) => async (server: F
     Params: {
       actor: string
     }
-    Reply: ActorInfo
+    Reply: ActorInfo | string
   }>('/:actor', {
     schema: {
       params: Type.Object({
         actor: Type.String()
       }),
       response: {
-        200: ActorInfoSchema
+        200: ActorInfoSchema,
+        409: Type.String()
       },
       description: 'Load your actor info',
       tags: ['Creation']
     }
   }, async (request, reply) => {
     const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     const info = await store.forActor(actor).getInfo()
     return await reply.send(info)
   })
@@ -64,13 +78,19 @@ export const creationRoutes = (cfg: APIConfig, store: Store) => async (server: F
         actor: Type.String()
       }),
       response: {
-        200: Type.String()
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Delete a actor',
       tags: ['Creation']
     }
   }, async (request, reply) => {
     const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     await store.forActor(actor).delete()
     return await reply.send({ message: 'Data deleted successfully' })
   })

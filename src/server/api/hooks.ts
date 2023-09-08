@@ -3,8 +3,9 @@ import { Type } from '@sinclair/typebox'
 import Store from '../store/index.js'
 import { WebHookSchema } from '../store/HookStore.js'
 import HookSystem from '../hooksystem.js'
+import ActivityPubSystem from '../apsystem.js'
 
-export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem) => async (server: FastifyTypebox): Promise<void> => {
+export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // For ModerationQueued
   server.put('/:actor/hooks/moderationqueued', {
     schema: {
@@ -13,18 +14,21 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
       }),
       body: WebHookSchema,
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Sets a hook for when an item is added to the moderation queue.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = request.body
     await hookSystem.setModerationQueued(actor, hook)
-    return await reply.send({ message: 'Hook set successfully' })
+    return await reply.send('Hook set successfully')
   })
 
   server.get('/:actor/hooks/moderationqueued', {
@@ -33,23 +37,23 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          hook: WebHookSchema
-        }),
-        404: Type.Object({
-          message: Type.String()
-        })
+        200: WebHookSchema,
+        409: Type.String()
       },
       description: 'Gets the hook for when an item is added to the moderation queue.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = await hookSystem.getModerationQueued(actor)
     if (hook != null) {
-      return await reply.send({ message: 'Hook retrieved successfully', hook })
+      return await reply.send(hook)
     } else {
-      return await reply.code(404).send({ message: 'Hook not found' })
+      return await reply.code(404).send('Hook not found')
     }
   })
 
@@ -59,17 +63,20 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Deletes a hook for when an item is removed from the moderation queue.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     await hookSystem.deleteModerationQueued(actor)
-    return await reply.send({ message: 'Hook deleted successfully' })
+    return await reply.send('Hook deleted successfully')
   })
 
   // For OnApprovedHook
@@ -80,18 +87,21 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
       }),
       body: WebHookSchema,
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Sets a hook for when an item is added to the onapproved.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = request.body
     await hookSystem.setOnApproved(actor, hook)
-    return await reply.send({ message: 'Hook set successfully' })
+    return await reply.send('Hook set successfully')
   })
 
   server.get('/:actor/hooks/onapproved', {
@@ -100,23 +110,24 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          hook: WebHookSchema
-        }),
-        404: Type.Object({
-          message: Type.String()
-        })
+        200: WebHookSchema,
+        409: Type.String(),
+        404: Type.String()
       },
       description: 'Gets the hook for when an item is added to the onapproved.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = await hookSystem.getOnApproved(actor)
     if (hook != null) {
-      return await reply.send({ message: 'Hook retrieved successfully', hook })
+      return await reply.send(hook)
     } else {
-      return await reply.code(404).send({ message: 'Hook not found' })
+      return await reply.code(404).send('Hook not found')
     }
   })
 
@@ -126,17 +137,20 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Deletes a hook for when an item is removed from the onapproved.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     await hookSystem.deleteOnApproved(actor)
-    return await reply.send({ message: 'Hook deleted successfully' })
+    return await reply.send('Hook deleted successfully')
   })
 
   // For OnRejectedHook
@@ -147,18 +161,21 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
       }),
       body: WebHookSchema,
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Sets a hook for when an item is added to the onrejected.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = request.body
     await hookSystem.setOnRejected(actor, hook)
-    return await reply.send({ message: 'Hook set successfully' })
+    return await reply.send('Hook set successfully')
   })
 
   server.get('/:actor/hooks/onrejected', {
@@ -167,23 +184,24 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          hook: WebHookSchema
-        }),
-        404: Type.Object({
-          message: Type.String()
-        })
+        200: WebHookSchema,
+        409: Type.String(),
+        404: Type.String()
       },
       description: 'Gets the hook for when an item is added to the onrejected.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     const hook = await hookSystem.getOnRejected(actor)
     if (hook != null) {
-      return await reply.send({ message: 'Hook retrieved successfully', hook })
+      return await reply.send(hook)
     } else {
-      return await reply.code(404).send({ message: 'Hook not found' })
+      return await reply.code(404).send('Hook not found')
     }
   })
 
@@ -193,16 +211,19 @@ export const hookRoutes = (cfg: APIConfig, store: Store, hookSystem: HookSystem)
         actor: Type.String()
       }),
       response: {
-        200: Type.Object({
-          message: Type.String()
-        })
+        200: Type.String(),
+        409: Type.String()
       },
       description: 'Deletes a hook for when an item is removed from the onrejected.',
       tags: ['Hooks']
     }
   }, async (request, reply) => {
-    const actor = request.params.actor
+    const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     await hookSystem.deleteOnRejected(actor)
-    return await reply.send({ message: 'Hook deleted successfully' })
+    return await reply.send('Hook deleted successfully')
   })
 }

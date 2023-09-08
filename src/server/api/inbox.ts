@@ -14,7 +14,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     Params: {
       actor: string
     }
-    Reply: APOrderedCollection
+    Reply: APOrderedCollection | string
   }>('/:actor/inbox', {
     schema: {
       params: Type.Object({
@@ -25,6 +25,12 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
   }, async (request, reply) => {
     const { actor } = request.params
+
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     const orderedItems = await store.forActor(actor).inbox.list()
     const orderedCollection: APOrderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -57,7 +63,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor } = request.params
 
-    const submittedActor = await apsystem.verifySignedRequest(actor, request)
+    const submittedActor = await apsystem.verifySignedRequest(request, actor)
 
     // TODO: check that the actor is the one that signed the request
     const activity = request.body
@@ -91,8 +97,13 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
   }, async (request, reply) => {
     const { actor, id } = request.params
+
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
     await apsystem.rejectActivity(actor, id)
-    return await reply.send({ message: 'ok' })
+    return await reply.send('ok')
   })
 
   // Approve the item from the inbox
@@ -116,8 +127,14 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
   }, async (request, reply) => {
     const { actor, id } = request.params
+
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     await apsystem.approveActivity(actor, id)
 
-    return await reply.send({ message: 'ok' })
+    return await reply.send('ok')
   })
 }

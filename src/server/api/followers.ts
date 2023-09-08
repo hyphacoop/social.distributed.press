@@ -11,7 +11,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     Params: {
       actor: string
     }
-    Reply: APCollection
+    Reply: APCollection | string
   }>('/:actor/followers', {
     schema: {
       params: Type.Object({
@@ -22,9 +22,41 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     }
   }, async (request, reply) => {
     const { actor } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
     const collection = await apsystem.followersCollection(actor)
     return await reply.send(collection)
   })
+
   // Remove a follower (notifying their server), use URL encoded URL of follower Actor
-  server.delete('/:actor/followers/:id', async (request, reply) => { })
+  server.delete<{
+    Params: {
+      actor: string
+      follower: string
+    }
+    Reply: APCollection | string
+  }>('/:actor/followers/:follower', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        follower: Type.String()
+      }),
+      description: 'Remove a follower',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, follower } = request.params
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(409).send('Not Allowed')
+    }
+
+    // TODO: Notify folks via APSystem
+    await store.forActor(actor).followers.remove([follower])
+
+    return await reply.send('OK')
+  })
 }
