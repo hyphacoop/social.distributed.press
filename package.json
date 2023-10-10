@@ -61,11 +61,13 @@
   "devDependencies": {
     "@ava/typescript": "^3.0.1",
     "@types/node": "^18.11.13",
+    "@types/sinon": "^10.0.16",
     "@types/yargs": "^17.0.17",
     "ava": "^5.1.1",
     "memory-level": "^1.0.0",
     "nodemon": "^2.0.20",
     "pino-pretty": "^9.1.1",
+    "sinon": "^15.2.0",
     "ts-node": "^10.9.1",
     "ts-standard": "^12.0.2",
     "typescript": "^4.9.3"
