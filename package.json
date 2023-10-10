@@ -5,9 +5,9 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "generate-identity": "ts-node-esm scripts/generate-identity.ts",
-    "import-blocklist": "ts-node-esm scripts/import-blocklist.ts",
-    "import-admins": "ts-node-esm scripts/import-admins.ts",
+    "generate-identity": "ts-node-esm src/scripts/generate-identity.ts",
+    "import-blocklist": "ts-node-esm src/scripts/import-blocklist.ts",
+    "import-admins": "ts-node-esm src/scripts/import-admins.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
     "dev": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
     "start": "node dist/server/index.js | pino-pretty -c -t",
@@ -69,7 +69,7 @@
     "pino-pretty": "^9.1.1",
     "sinon": "^15.2.0",
     "ts-node": "^10.9.1",
-    "ts-standard": "^12.0.1",
+    "ts-standard": "^12.0.2",
     "typescript": "^4.9.3"
   },
   "ava": {

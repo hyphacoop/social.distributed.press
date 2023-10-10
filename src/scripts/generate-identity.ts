@@ -1,4 +1,4 @@
-import generateIdentity from '../src/keypair'
+import generateIdentity from '../keypair'
 
 const keyPair = generateIdentity()
 

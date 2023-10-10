@@ -5,7 +5,7 @@ import { Level } from 'level'
 import { parse } from 'csv-parse'
 import { Readable } from 'node:stream'
 
-import Store from '../src/server/store/index.js'
+import Store from '../server/store/index.js'
 
 const paths = envPaths('social.distributed.press')
 
