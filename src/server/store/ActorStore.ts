@@ -3,6 +3,7 @@ import { AbstractLevel } from 'abstract-level'
 import { ActorInfo } from './index.js'
 import { ActivityStore } from './ActivityStore.js'
 import { AccountListStore } from './AccountListStore.js'
+import { ReplyStore } from './ReplyStore.js'
 import { HookStore } from './HookStore.js'
 
 export class ActorStore {
@@ -12,6 +13,7 @@ export class ActorStore {
   blocklist: AccountListStore
   allowlist: AccountListStore
   followers: AccountListStore
+  replies: ReplyStore
   hooks: HookStore
 
   constructor (db: AbstractLevel<any, string, any>) {
@@ -34,6 +36,9 @@ export class ActorStore {
 
     const followerDb = this.db.sublevel('followers', { valueEncoding: 'json' })
     this.followers = new AccountListStore(followerDb)
+
+    const replyDb = this.db.sublevel('replies', { valueEncoding: 'json' })
+    this.replies = new ReplyStore(replyDb)
 
     const hooksDb = this.db.sublevel('hooks', { valueEncoding: 'json' })
     this.hooks = new HookStore(hooksDb)
