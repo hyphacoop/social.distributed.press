@@ -134,6 +134,11 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
 
     await apsystem.approveActivity(actor, id)
+    const activity = await store.forActor(actor).inbox.get(id)
+    // Add to ReplyStore if the activity is a reply
+    if (activity.type === 'Reply') {
+      await store.forActor(actor).replies.add(activity)
+    }
 
     return await reply.send('ok')
   })
