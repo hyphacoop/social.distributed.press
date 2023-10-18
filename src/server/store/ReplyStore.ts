@@ -36,10 +36,12 @@ export class ReplyStore {
     }
   }
 
-  async list (): Promise<APActivity[]> {
+  async list (postURL?: string): Promise<APActivity[]> {
     const replies: APActivity[] = []
     for await (const value of this.db.values()) {
-      replies.push(value)
+      if (!postURL || value.id === postURL) {
+        replies.push(value)
+      }
     }
     return replies
   }
