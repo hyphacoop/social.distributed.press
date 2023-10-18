@@ -29,6 +29,7 @@ import { creationRoutes } from './creation.js'
 import { blockAllowListRoutes } from './blockallowlist.js'
 import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
+import { replyRoutes } from './reply.js'
 import { hookRoutes } from './hooks.js'
 
 export const paths = envPaths('distributed-press')
@@ -124,6 +125,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(outboxRoutes(cfg, store, apsystem))
   await server.register(followerRoutes(cfg, store, apsystem))
+  await server.register(replyRoutes(cfg, store, apsystem))
   await server.register(blockAllowListRoutes(cfg, store, apsystem))
   await server.register(adminRoutes(cfg, store, apsystem))
   await server.register(hookRoutes(cfg, store, hookSystem, apsystem))
