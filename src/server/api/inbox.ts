@@ -135,11 +135,21 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     await apsystem.approveActivity(actor, id)
     const activity = await store.forActor(actor).inbox.get(id)
-    // Add to ReplyStore if the activity is a reply
-    if (activity.type === 'Reply') {
-      await store.forActor(actor).replies.add(activity)
-    }
 
+    // Type guard to ensure activity.object is an object and not an array
+    if ('object' in activity && activity.object !== undefined && typeof activity.object !== 'string') {
+      // Assuming activity.object is of type APActivity or has a similar structure.
+      const activityObject = activity.object as APActivity
+
+      // Check conditions
+      if (activity.type === 'Create' &&
+          activityObject.type === 'Note' &&
+          activityObject.inReplyTo !== '' &&
+          activityObject.attributedTo === actor) {
+        // Check if the reply's author is this inbox's actor
+        await store.forActor(actor).replies.add(activityObject as any) // Use as any to overcome type issues for now
+      }
+    }
     return await reply.send('ok')
   })
 }
