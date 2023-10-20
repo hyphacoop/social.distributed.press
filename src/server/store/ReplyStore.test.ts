@@ -49,6 +49,6 @@ test('ReplyStore - list replies', async t => {
   const store = newReplyStore()
   await store.add(reply)
 
-  const replies = await store.list()
+  const replies = await store.list(reply.id!)
   t.deepEqual(replies, [reply])
 })

@@ -1,11 +1,14 @@
 import { AbstractLevel } from 'abstract-level'
 import { APActivity } from 'activitypub-types'
+import { ActivityStore } from './ActivityStore.js'
 
 export class ReplyStore {
   db: AbstractLevel<any, string, any>
+  repliesCache: Map<string, ActivityStore>
 
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
+    this.repliesCache = new Map()
   }
 
   urlToKey (url: string): string {
@@ -13,36 +16,40 @@ export class ReplyStore {
     return encodeURIComponent(url)
   }
 
+  forPost (postURL: string): ActivityStore {
+    if (!this.repliesCache.has(postURL)) {
+      const sub = this.db.sublevel(postURL, { valueEncoding: 'json' })
+      const store = new ActivityStore(sub)
+      this.repliesCache.set(postURL, store)
+    }
+
+    const store = this.repliesCache.get(postURL)
+    if (store == null) {
+      throw new Error('Domain store not initialized')
+    }
+    return store
+  }
+
   async add (reply: APActivity): Promise<void> {
     if (reply.id === undefined) {
       throw new Error('Reply ID is missing.')
     }
-    const key = this.urlToKey(reply.id)
-    await this.db.put(key, reply)
+    const store = this.forPost(reply.id)
+    await store.add(reply)
   }
 
   async remove (url: string): Promise<void> {
-    const key = this.urlToKey(url)
-    await this.db.del(key)
+    const store = this.forPost(url)
+    await store.remove(url)
   }
 
   async get (url: string): Promise<APActivity> {
-    const key = this.urlToKey(url)
-    try {
-      const reply: APActivity = await this.db.get(key)
-      return reply
-    } catch (error) {
-      throw new Error(`Reply not found for URL: ${url}`)
-    }
+    const store = this.forPost(url)
+    return await store.get(url)
   }
 
-  async list (postURL?: string): Promise<APActivity[]> {
-    const replies: APActivity[] = []
-    for await (const value of this.db.values()) {
-      if (postURL === null || postURL === undefined || value.id === postURL) {
-        replies.push(value)
-      }
-    }
-    return replies
+  async list (postURL: string): Promise<APActivity[]> {
+    const store = this.forPost(postURL)
+    return await store.list()
   }
 }
