@@ -17,7 +17,8 @@ const reply: APActivity = {
   object: {
     type: 'Note',
     content: 'This is a reply',
-    id: 'https://example.com/note2'
+    id: 'https://example.com/note2',
+    inReplyTo: 'https://example.com/originalNote'
   },
   id: 'https://example.com/activity2'
 }
@@ -33,15 +34,13 @@ test('ReplyStore - add and get reply', async t => {
 test('ReplyStore - remove reply', async t => {
   const store = newReplyStore()
   await store.add(reply)
-
   await store.remove(reply.id!)
-
   // Ensure the reply is deleted
   await t.throwsAsync(async () => {
     await store.get(reply.id!)
   }, {
     instanceOf: Error,
-    message: `Reply not found for URL: ${reply.id!}`
+    message: `Activity not found for URL: ${reply.id!}`
   })
 })
 
