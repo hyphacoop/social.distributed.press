@@ -129,8 +129,10 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
   await server.register(hookRoutes(cfg, store, hookSystem, apsystem))
 
   if (cfg.useSwagger ?? false) {
-    server.swagger()
-    server.log.info('Registered Swagger endpoints')
+    server.ready().then(() => {
+      server.log.info('Registered Swagger endpoints')
+      server.swagger()
+    })
   }
 }
 
