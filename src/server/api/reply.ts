@@ -27,10 +27,6 @@ export const replyRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
   }, async (request, reply) => {
     const { actor, postURL } = request.params
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
-    if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
-    }
 
     const replies = await store.forActor(actor).replies.list(postURL)
     const replyUrls = replies.map(r => r.id).filter(Boolean) as string[]
@@ -49,12 +45,14 @@ export const replyRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   server.delete<{
     Params: {
       actor: string
+      postURL: string
       replyURL: string
     }
-  }>('/:actor/replies/:replyURL', {
+  }>('/:actor/replies/:postURL/:replyURL', {
     schema: {
       params: Type.Object({
         actor: Type.String(),
+        postURL: Type.String(), // This will represent the post's URL
         replyURL: Type.String() // This will represent the reply's URL to delete
       }),
       response: {
@@ -65,13 +63,9 @@ export const replyRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       tags: ['Replies']
     }
   }, async (request, reply) => {
-    const { actor, replyURL } = request.params
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
-    if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
-    }
+    const { actor, postURL, replyURL } = request.params
 
-    await store.forActor(actor).replies.remove(replyURL)
+    await store.forActor(actor).replies.forPost(postURL).remove(replyURL)
     return await reply.send('Reply deleted successfully')
   })
 }
