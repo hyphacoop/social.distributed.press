@@ -294,10 +294,26 @@ export default class ActivityPubSystem {
 
     const { type } = activity
 
-    // TODO: Handle other types + index by post
     if (type === 'Follow') {
       await this.acceptFollow(fromActor, activity)
+    } else if (type === 'Create') {
+      if ('object' in activity && activity.object !== undefined && typeof activity.object !== 'string') {
+        const activityObject = activity.object as APActivity
+        if (
+          activityObject.type === 'Note' &&
+          activityObject.inReplyTo !== '' &&
+          activityObject.attributedTo === fromActor
+        ) {
+          await this.store.forActor(fromActor).replies.add(activityObject as any)
+        }
+      }
+    } else if (type === 'Update') {
+      // Handle Update type
+      // TODO: Implement logic to overwrite the reply or handle the update accordingly.
+    } else {
+      // TODO: Handle "Delete" type in the future
     }
+
     await actorStore.inbox.remove(activityId)
     await this.hookSystem.dispatchOnApproved(fromActor, activity)
   }
