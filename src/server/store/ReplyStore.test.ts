@@ -4,12 +4,10 @@ import { ReplyStore } from './ReplyStore'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
 
-// Helper function to instantiate a new ReplyStore with an in-memory database
 function newReplyStore (): ReplyStore {
   return new ReplyStore(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
-// Sample data for the tests
 const reply: APActivity = {
   '@context': 'https://www.w3.org/ns/activitystreams',
   type: 'Create',
@@ -23,24 +21,34 @@ const reply: APActivity = {
   id: 'https://example.com/activity2'
 }
 
+// Assert object type and get 'inReplyTo' value safely
+function inReplyToValue (obj: any): string {
+  if (typeof obj === 'object' && obj !== null && 'inReplyTo' in obj) {
+    return obj.inReplyTo
+  }
+  throw new Error('inReplyTo not found in object')
+}
+
 test('ReplyStore - add and get reply', async t => {
   const store = newReplyStore()
   await store.add(reply)
 
-  const retrievedReply = await store.get(reply.id!)
-  t.deepEqual(retrievedReply, reply)
+  const retrievedReplies = await store.list('https://example.com/originalNote')
+  t.deepEqual(retrievedReplies, [reply.object])
 })
 
 test('ReplyStore - remove reply', async t => {
   const store = newReplyStore()
   await store.add(reply)
-  await store.remove(reply.id!)
-  // Ensure the reply is deleted
+
+  const postURL = inReplyToValue(reply.object)
+  await store.forPost(postURL).remove(reply.id!)
+
   await t.throwsAsync(async () => {
-    await store.get(reply.id!)
+    await store.forPost(postURL).get(reply.id!)
   }, {
     instanceOf: Error,
-    message: `Activity not found for URL: ${reply.id!}`
+    message: `Object not found for URL: ${reply.id!}`
   })
 })
 
@@ -48,6 +56,7 @@ test('ReplyStore - list replies', async t => {
   const store = newReplyStore()
   await store.add(reply)
 
-  const replies = await store.list(reply.id!)
-  t.deepEqual(replies, [reply])
+  const postURL = inReplyToValue(reply.object)
+  const replies = await store.list(postURL)
+  t.deepEqual(replies, [reply.object])
 })

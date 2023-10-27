@@ -1,10 +1,10 @@
 import { AbstractLevel } from 'abstract-level'
-import { APActivity } from 'activitypub-types'
-import { ActivityStore } from './ActivityStore.js'
+import { AnyAPObject } from 'activitypub-types'
+import { APObjectStore } from './APObjectStore.js'
 
 export class ReplyStore {
   db: AbstractLevel<any, string, any>
-  repliesCache: Map<string, ActivityStore>
+  repliesCache: Map<string, APObjectStore>
 
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
@@ -12,14 +12,13 @@ export class ReplyStore {
   }
 
   urlToKey (url: string): string {
-    // URL encode the url to clean up the special chars before inserting
     return encodeURIComponent(url)
   }
 
-  forPost (postURL: string): ActivityStore {
+  forPost (postURL: string): APObjectStore {
     if (!this.repliesCache.has(postURL)) {
       const sub = this.db.sublevel(postURL, { valueEncoding: 'json' })
-      const store = new ActivityStore(sub)
+      const store = new APObjectStore(sub)
       this.repliesCache.set(postURL, store)
     }
 
@@ -30,25 +29,29 @@ export class ReplyStore {
     return store
   }
 
-  async add (reply: APActivity): Promise<void> {
+  async add (reply: AnyAPObject): Promise<void> {
     if (reply.id === undefined) {
       throw new Error('Reply ID is missing.')
     }
-    const store = this.forPost(reply.id)
-    await store.add(reply)
+
+    // Check if the reply has 'object' property and is not an array.
+    if (!('object' in reply) || Array.isArray(reply.object) || typeof reply.object !== 'object') {
+      throw new Error('The reply object does not contain a valid object property.')
+    }
+
+    const replyObject = reply.object
+
+    // Check if the nested object has 'inReplyTo' property.
+    if (!('inReplyTo' in replyObject) || typeof replyObject.inReplyTo !== 'string') {
+      throw new Error('The nested object does not contain an inReplyTo property.')
+    }
+
+    // Use 'inReplyTo' for the post URL.
+    const store = this.forPost(replyObject.inReplyTo)
+    await store.add(replyObject)
   }
 
-  async remove (url: string): Promise<void> {
-    const store = this.forPost(url)
-    await store.remove(url)
-  }
-
-  async get (url: string): Promise<APActivity> {
-    const store = this.forPost(url)
-    return await store.get(url)
-  }
-
-  async list (postURL: string): Promise<APActivity[]> {
+  async list (postURL: string): Promise<AnyAPObject[]> {
     const store = this.forPost(postURL)
     return await store.list()
   }
