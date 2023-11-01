@@ -301,6 +301,7 @@ export default class ActivityPubSystem {
         const activityObject = activity.object as APActivity
         if (
           activityObject.type === 'Note' &&
+          (typeof activityObject.inReplyTo === 'string') &&
           activityObject.inReplyTo !== '' &&
           activityObject.attributedTo === fromActor
         ) {
