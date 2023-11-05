@@ -34,21 +34,14 @@ export class ReplyStore {
       throw new Error('Reply ID is missing.')
     }
 
-    // Check if the reply has 'object' property and is not an array.
-    if (!('object' in reply) || Array.isArray(reply.object) || typeof reply.object !== 'object') {
-      throw new Error('The reply object does not contain a valid object property.')
+    // Check if the reply has 'inReplyTo' property.
+    if (!('inReplyTo' in reply) || typeof reply.inReplyTo !== 'string') {
+      throw new Error('The reply does not contain an inReplyTo property.')
     }
 
-    const replyObject = reply.object
-
-    // Check if the nested object has 'inReplyTo' property.
-    if (!('inReplyTo' in replyObject) || typeof replyObject.inReplyTo !== 'string') {
-      throw new Error('The nested object does not contain an inReplyTo property.')
-    }
-
-    // Use 'inReplyTo' for the post URL.
-    const store = this.forPost(replyObject.inReplyTo)
-    await store.add(replyObject)
+    // Use 'inReplyTo' from 'reply' for the post URL.
+    const store = this.forPost(reply.inReplyTo)
+    await store.add(reply)
   }
 
   async list (postURL: string): Promise<AnyAPObject[]> {

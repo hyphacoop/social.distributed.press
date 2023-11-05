@@ -2,7 +2,7 @@
 import test from 'ava'
 import { ReplyStore } from './ReplyStore'
 import { MemoryLevel } from 'memory-level'
-import { APActivity } from 'activitypub-types'
+import { APActivity, AnyAPObject } from 'activitypub-types'
 
 function newReplyStore (): ReplyStore {
   return new ReplyStore(new MemoryLevel({ valueEncoding: 'json' }))
@@ -31,7 +31,7 @@ function inReplyToValue (obj: any): string {
 
 test('ReplyStore - add and get reply', async t => {
   const store = newReplyStore()
-  await store.add(reply)
+  await store.add(reply.object as AnyAPObject)
 
   const retrievedReplies = await store.list('https://example.com/originalNote')
   t.deepEqual(retrievedReplies, [reply.object])
@@ -39,7 +39,7 @@ test('ReplyStore - add and get reply', async t => {
 
 test('ReplyStore - remove reply', async t => {
   const store = newReplyStore()
-  await store.add(reply)
+  await store.add(reply.object as AnyAPObject)
 
   const postURL = inReplyToValue(reply.object)
   await store.forPost(postURL).remove(reply.id!)
@@ -54,7 +54,7 @@ test('ReplyStore - remove reply', async t => {
 
 test('ReplyStore - list replies', async t => {
   const store = newReplyStore()
-  await store.add(reply)
+  await store.add(reply.object as AnyAPObject)
 
   const postURL = inReplyToValue(reply.object)
   const replies = await store.list(postURL)
