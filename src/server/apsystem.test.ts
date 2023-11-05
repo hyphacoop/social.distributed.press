@@ -7,6 +7,19 @@ import { ModerationChecker } from './moderation.js'
 import HookSystem from './hooksystem'
 import signatureParser from 'activitypub-http-signatures'
 
+// Create a sample Create activity with a reply
+const createActivity = {
+  '@context': 'https://www.w3.org/ns/activitystreams',
+  type: 'Create',
+  actor: 'https://example.com/user1',
+  object: {
+    type: 'Note',
+    content: 'Hello, World!',
+    id: 'https://example.com/note1'
+  },
+  id: 'https://example.com/activity1'
+}
+
 // Create some mock dependencies
 const mockStore = {
   admins: { matches: () => {} },
@@ -15,7 +28,11 @@ const mockStore = {
     getInfo: () => {},
     inbox: { add: () => {}, get: () => {}, remove: () => {} },
     outbox: { add: () => {} },
-    followers: { list: () => {}, add: () => {}, remove: () => {} }
+    followers: { list: () => {}, add: () => {}, remove: () => {} },
+    replies: {
+      add: sinon.stub().resolves(),
+      list: sinon.stub().resolves([createActivity.object])
+    }
   })
 } as unknown as Store
 
@@ -112,6 +129,14 @@ test('hasPermissionActorRequest denies an invalid actor', async t => {
 
   const result = await aps.hasPermissionActorRequest('actor', mockRequest)
   t.false(result)
+})
+
+test('store reply in response to a Create activity', async t => {
+  await mockStore.forActor('https://example.com/user1').replies.add(createActivity.object)
+
+  const storedReplies = await mockStore.forActor('https://example.com/user1').replies.list('https://example.com/note1')
+
+  t.deepEqual(storedReplies, [createActivity.object], 'The reply should be stored in the replies store')
 })
 
 // After all tests, restore all sinon mocks
