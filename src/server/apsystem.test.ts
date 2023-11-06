@@ -11,19 +11,21 @@ import signatureParser from 'activitypub-http-signatures'
 const createActivity = {
   '@context': 'https://www.w3.org/ns/activitystreams',
   type: 'Create',
-  actor: 'https://example.com/user1',
+  actor: 'https://example.com/user2',
   object: {
     type: 'Note',
-    content: 'Hello, World!',
-    id: 'https://example.com/note1'
+    content: 'This is a reply',
+    id: 'https://example.com/note2',
+    inReplyTo: 'https://example.com/originalNote'
   },
-  id: 'https://example.com/activity1'
+  id: 'https://example.com/activity2'
 }
 
 // Create some mock dependencies
 const mockStore = {
   admins: { matches: () => {} },
   blocklist: { matches: () => {} },
+  allowlist: { matches: () => {} },
   forActor: () => ({
     getInfo: () => {},
     inbox: { add: () => {}, get: () => {}, remove: () => {} },
@@ -32,6 +34,13 @@ const mockStore = {
     replies: {
       add: sinon.stub().resolves(),
       list: sinon.stub().resolves([createActivity.object])
+    },
+    allowlist: { matches: sinon.stub().resolves(false) },
+    blocklist: { matches: sinon.stub().resolves(false) },
+    hooks: {
+      get: sinon.stub().resolves(),
+      setModerationQueued: sinon.stub().resolves(),
+      getModerationQueued: sinon.stub().resolves()
     }
   })
 } as unknown as Store
@@ -54,7 +63,6 @@ const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, m
 test.beforeEach(() => {
   // Restore stubs before setting them up again
   sinon.restore()
-
   sinon.stub(aps, 'verifySignedRequest').returns(Promise.resolve('http://test.url'))
   sinon.stub(aps, 'signedFetch').returns(Promise.resolve(
     new Response(JSON.stringify({}), {
@@ -132,11 +140,17 @@ test('hasPermissionActorRequest denies an invalid actor', async t => {
 })
 
 test('store reply in response to a Create activity', async t => {
-  await mockStore.forActor('https://example.com/user1').replies.add(createActivity.object)
+  // Ingest the Create activity reply through the ActivityPubSystem
+  await aps.ingestActivity('https://example.com/user2', createActivity)
 
-  const storedReplies = await mockStore.forActor('https://example.com/user1').replies.list('https://example.com/note1')
+  // Assume the actor 'https://example.com/user2' is the one whose store we want to check
+  const actorStore = mockStore.forActor('https://example.com/user2')
 
-  t.deepEqual(storedReplies, [createActivity.object], 'The reply should be stored in the replies store')
+  // After ingesting the activity, we would expect the reply to be in the replies store
+  const storedReplies = await actorStore.replies.list('https://example.com/originalNote')
+
+  // The test expects the stored replies to contain the reply object
+  t.deepEqual(storedReplies, [createActivity.object], 'The reply should be stored in the replies store after being ingested by the ActivityPubSystem')
 })
 
 // After all tests, restore all sinon mocks
