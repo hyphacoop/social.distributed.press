@@ -134,7 +134,6 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     }
 
     await apsystem.approveActivity(actor, id)
-
     return await reply.send('ok')
   })
 }
