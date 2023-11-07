@@ -109,7 +109,9 @@ export default class ActivityPubSystem {
     const parsedActorURL = new URL(keyId)
     parsedActorURL.hash = ''
 
-    return parsedActorURL.href
+    const fullActorURL =  parsedActorURL.href
+
+    return this.actorToMention(fullActorURL)
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
