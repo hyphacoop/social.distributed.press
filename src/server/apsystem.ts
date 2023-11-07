@@ -196,11 +196,14 @@ export default class ActivityPubSystem {
     }
 
     // TODO: Support html pages with a link rel in them
-
+    try {
     // TODO: Verify structure?
-    const actor = (await response.json()) as APActor
+      const actor = (await response.json()) as APActor
 
-    return actor
+      return actor
+    } catch (cause) {
+      throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
+    }
   }
 
   async getInbox (actorURL: string): Promise<string> {
@@ -236,7 +239,9 @@ export default class ActivityPubSystem {
       throw new Error(`Cannot fetch webmention data from ${mentionURL}: http status ${response.status} - ${await response.text()}`)
     }
 
-    const { subject, links } = await response.json()
+    const { subject, links } = await response.json().catch((cause) => {
+      throw new Error(`Unable to parse webmention JSON at ${mentionURL}`, { cause })
+    })
     if (subject !== acct) {
       throw new Error(`Webmention endpoint returned invalid subject. Extepcted ${acct} at ${mentionURL}, got ${subject as string}`)
     }

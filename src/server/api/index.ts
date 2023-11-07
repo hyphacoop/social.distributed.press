@@ -132,6 +132,8 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
     server.ready().then(() => {
       server.log.info('Registered Swagger endpoints')
       server.swagger()
+    }, (e: Error) => {
+      server.log.error(e)
     })
   }
 }
