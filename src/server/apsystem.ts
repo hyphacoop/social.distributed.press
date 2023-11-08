@@ -109,9 +109,9 @@ export default class ActivityPubSystem {
     const parsedActorURL = new URL(keyId)
     parsedActorURL.hash = ''
 
-    const fullActorURL =  parsedActorURL.href
+    const fullActorURL = parsedActorURL.href
 
-    return this.actorToMention(fullActorURL)
+    return await this.actorToMention(fullActorURL)
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
@@ -185,14 +185,16 @@ export default class ActivityPubSystem {
   }
 
   async getActor (actorURL: string): Promise<APActor> {
-  // resolve actor data with fetch
-    const response = await this.fetch(actorURL, {
+  // resolve actor data with signedFetch
+    const response = await this.signedFetch(this.publicURL, {
+      url: actorURL,
+      method: 'GET',
       headers: {
         Accept: 'application/ld+json'
       }
     })
 
-    // throq if response not ok or if inbox isn't a string
+    // Check if response is not okay and throw an error
     if (!response.ok) {
       throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
     }
