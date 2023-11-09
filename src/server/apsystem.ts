@@ -78,8 +78,13 @@ export default class ActivityPubSystem {
     // TODO: Look up key from key id somehow?
     const keyField = DEFAULT_PUBLIC_KEY_FIELD
 
+    // Check that fromActor is defined
+    if (fromActor === undefined) {
+      throw new Error('fromActor is required but was not provided')
+    }
+
     // Convert from actor URL to `@username@domain format
-    const mention = await this.actorToMention(keyId)
+    const mention = await this.actorToMention(keyId, fromActor)
 
     const isAllowed = await this.modCheck.isAllowed(mention, fromActor)
 
@@ -88,7 +93,7 @@ export default class ActivityPubSystem {
       throw new Error(`Blocked actor ${mention}`)
     }
 
-    const actor: any = await this.getActor(keyId)
+    const actor: any = await this.getActor(keyId, fromActor)
 
     const publicKey = actor[keyField]
     if (publicKey?.publicKeyPem === undefined) {
@@ -111,7 +116,7 @@ export default class ActivityPubSystem {
 
     const fullActorURL = parsedActorURL.href
 
-    return await this.actorToMention(fullActorURL)
+    return await this.actorToMention(fullActorURL, fromActor)
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
@@ -164,7 +169,7 @@ export default class ActivityPubSystem {
 
   async sendTo (actorURL: string, fromActor: string, activity: APActivity): Promise<void> {
     const method = 'post'
-    const url = await this.getInbox(actorURL)
+    const url = await this.getInbox(actorURL, fromActor)
 
     // resolve actor data
     // get their inbox url
@@ -184,9 +189,9 @@ export default class ActivityPubSystem {
     }
   }
 
-  async getActor (actorURL: string): Promise<APActor> {
+  async getActor (actorURL: string, fromActor: string): Promise<APActor> {
   // resolve actor data with signedFetch
-    const response = await this.signedFetch(this.publicURL, {
+    const response = await this.signedFetch(fromActor, {
       url: actorURL,
       method: 'GET',
       headers: {
@@ -210,16 +215,16 @@ export default class ActivityPubSystem {
     }
   }
 
-  async getInbox (actorURL: string): Promise<string> {
-    const actor = await this.getActor(actorURL)
+  async getInbox (actorURL: string, fromActor: string): Promise<string> {
+    const actor = await this.getActor(actorURL, fromActor)
     // TODO do proper json-ld resolving
     return actor.inbox as string
     // get inbox url and return
   }
 
   // Turns urls like https://domain.com/example into @example@domain.com
-  async actorToMention (actorURL: string): Promise<string> {
-    const actor = await this.getActor(actorURL)
+  async actorToMention (actorURL: string, fromActor: string): Promise<string> {
+    const actor = await this.getActor(actorURL, fromActor)
     const { preferredUsername } = actor
 
     if (preferredUsername === undefined) {
@@ -280,7 +285,7 @@ export default class ActivityPubSystem {
       throw new Error('Activities must contain an actor string')
     }
 
-    const mention = await this.actorToMention(activityActor)
+    const mention = await this.actorToMention(activityActor, fromActor)
 
     const moderationState = await this.modCheck.check(mention, fromActor)
 
@@ -357,7 +362,7 @@ export default class ActivityPubSystem {
 
     await this.sendTo(followerURL, fromActor, response)
 
-    const webmention = await this.actorToMention(followerURL)
+    const webmention = await this.actorToMention(followerURL, fromActor)
 
     await this.store.forActor(fromActor).followers.add([webmention])
   }
@@ -384,7 +389,7 @@ export default class ActivityPubSystem {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)
 
-    const profile = await this.getActor(actorURL)
+    const profile = await this.getActor(actorURL, fromActor)
     let followersURL = profile.followers
     // TODO: handle array of string?
     if (typeof followersURL !== 'string') {
