@@ -78,11 +78,6 @@ export default class ActivityPubSystem {
     // TODO: Look up key from key id somehow?
     const keyField = DEFAULT_PUBLIC_KEY_FIELD
 
-    // Check that fromActor is defined
-    if (fromActor === undefined) {
-      throw new Error('fromActor is required but was not provided')
-    }
-
     // Convert from actor URL to `@username@domain format
     const mention = await this.actorToMention(keyId, fromActor)
 
@@ -189,26 +184,31 @@ export default class ActivityPubSystem {
     }
   }
 
-  async getActor (actorURL: string, fromActor: string): Promise<APActor> {
-  // resolve actor data with signedFetch
-    const response = await this.signedFetch(fromActor, {
-      url: actorURL,
-      method: 'GET',
-      headers: {
-        Accept: 'application/ld+json'
-      }
-    })
+  async getActor (actorURL: string, fromActor?: string): Promise<APActor> {
+    let response
+
+    if (typeof fromActor === 'string' && fromActor.trim() !== '') {
+      // Use signed fetch if fromActor is provided
+      response = await this.signedFetch(fromActor, {
+        url: actorURL,
+        method: 'GET',
+        headers: { Accept: 'application/ld+json' }
+      })
+    } else {
+      // Use regular fetch if fromActor is not provided
+      response = await this.fetch(actorURL, {
+        headers: { Accept: 'application/ld+json' }
+      })
+    }
 
     // Check if response is not okay and throw an error
     if (!response.ok) {
       throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
     }
 
-    // TODO: Support html pages with a link rel in them
     try {
-    // TODO: Verify structure?
-      const actor = (await response.json()) as APActor
-
+      // TODO: Verify structure?
+      const actor = await response.json() as APActor
       return actor
     } catch (cause) {
       throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
@@ -223,10 +223,30 @@ export default class ActivityPubSystem {
   }
 
   // Turns urls like https://domain.com/example into @example@domain.com
-  async actorToMention (actorURL: string, fromActor: string): Promise<string> {
-    const actor = await this.getActor(actorURL, fromActor)
-    const { preferredUsername } = actor
+  async actorToMention (actorURL: string, fromActor?: string): Promise<string> {
+    let actor
 
+    if (typeof fromActor === 'string' && fromActor.trim() !== '') {
+      // Use signed fetch if fromActor is provided
+      actor = await this.getActor(actorURL, fromActor)
+    } else {
+      // Use regular fetch if fromActor is not provided
+      const response = await this.fetch(actorURL, {
+        headers: { Accept: 'application/ld+json' }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status}`)
+      }
+
+      try {
+        actor = await response.json() as APActor
+      } catch (cause) {
+        throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
+      }
+    }
+
+    const { preferredUsername } = actor
     if (preferredUsername === undefined) {
       throw new Error(`Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
     }
