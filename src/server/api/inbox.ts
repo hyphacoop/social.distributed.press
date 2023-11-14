@@ -63,13 +63,22 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor } = request.params
 
-    const submittedActor = await apsystem.verifySignedRequest(request, actor)
+    const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+    const submittedActorURL = await apsystem.mentionToActor(submittedActorMention)
 
     // TODO: check that the actor is the one that signed the request
     const activity = request.body
-    // TODO: Account for actor being array of strings or nested object
-    if (activity.actor !== submittedActor) throw new Error(`Submitted activity must be from signed actor. Activity: ${activity.actor as string} Request: ${submittedActor}`)
 
+    const fromActorURL = activity.actor
+
+    // TODO: Account for actor being array of strings or nested object
+    if (typeof fromActorURL !== 'string') {
+      throw new Error('Must specify `actor` URL in activity')
+    }
+
+    if (fromActorURL !== submittedActorURL) {
+      throw new Error(`Submitted activity must be from signed actor. Activity: ${fromActorURL} Request: ${submittedActorURL}`)
+    }
     await apsystem.ingestActivity(actor, activity)
 
     return await reply.send({ message: 'ok' })
