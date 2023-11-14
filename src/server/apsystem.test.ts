@@ -133,6 +133,21 @@ test('getActor uses regular fetch when fromActor is not provided', async t => {
   }, 'getActor should use regular fetch when fromActor is not provided')
 })
 
+// Test for successful Webfinger fetch
+test('mentionToActor successfully fetches data from Webfinger', async t => {
+  const mention = '@test@domain.com'
+  // Mock successful response from Webfinger endpoint
+  sinon.stub(aps, 'fetch').withArgs(sinon.match(/webfinger/)).returns(Promise.resolve(
+    new Response(JSON.stringify({
+      subject: 'acct:test@domain.com',
+      links: [{ rel: 'self', href: 'http://actor.url' }]
+    }), { status: 200 })
+  ))
+
+  const result = await aps.mentionToActor(mention)
+  t.is(result, 'http://actor.url', 'should successfully fetch data from Webfinger')
+})
+
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
   // Restore all sinon mocks
