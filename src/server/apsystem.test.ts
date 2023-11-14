@@ -114,6 +114,25 @@ test('hasPermissionActorRequest denies an invalid actor', async t => {
   t.false(result)
 })
 
+test('getActor uses signedFetch when fromActor is provided', async t => {
+  const actorURL = 'http://remote.actor'
+  const fromActor = 'http://local.actor'
+
+  await t.notThrowsAsync(async () => {
+    const actor = await aps.getActor(actorURL, fromActor)
+    t.truthy(actor, 'Actor should be fetched successfully with signed request')
+  }, 'getActor should use signedFetch when fromActor is provided')
+})
+
+test('getActor uses regular fetch when fromActor is not provided', async t => {
+  const actorURL = 'http://remote.actor'
+
+  await t.notThrowsAsync(async () => {
+    const actor = await aps.getActor(actorURL)
+    t.truthy(actor, 'Actor should be fetched successfully without signed request')
+  }, 'getActor should use regular fetch when fromActor is not provided')
+})
+
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
   // Restore all sinon mocks
