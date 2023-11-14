@@ -79,7 +79,7 @@ export default class ActivityPubSystem {
     const keyField = DEFAULT_PUBLIC_KEY_FIELD
 
     // Convert from actor URL to `@username@domain format
-    const mention = await this.actorToMention(keyId)
+    const mention = await this.actorToMention(keyId, fromActor)
 
     const isAllowed = await this.modCheck.isAllowed(mention, fromActor)
 
@@ -88,7 +88,7 @@ export default class ActivityPubSystem {
       throw new Error(`Blocked actor ${mention}`)
     }
 
-    const actor: any = await this.getActor(keyId)
+    const actor: any = await this.getActor(keyId, fromActor)
 
     const publicKey = actor[keyField]
     if (publicKey?.publicKeyPem === undefined) {
@@ -109,9 +109,9 @@ export default class ActivityPubSystem {
     const parsedActorURL = new URL(keyId)
     parsedActorURL.hash = ''
 
-    const fullActorURL =  parsedActorURL.href
+    const fullActorURL = parsedActorURL.href
 
-    return this.actorToMention(fullActorURL)
+    return await this.actorToMention(fullActorURL, fromActor)
   }
 
   async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
@@ -164,7 +164,7 @@ export default class ActivityPubSystem {
 
   async sendTo (actorURL: string, fromActor: string, activity: APActivity): Promise<void> {
     const method = 'post'
-    const url = await this.getInbox(actorURL)
+    const url = await this.getInbox(actorURL, fromActor)
 
     // resolve actor data
     // get their inbox url
@@ -184,42 +184,69 @@ export default class ActivityPubSystem {
     }
   }
 
-  async getActor (actorURL: string): Promise<APActor> {
-  // resolve actor data with fetch
-    const response = await this.fetch(actorURL, {
-      headers: {
-        Accept: 'application/ld+json'
-      }
-    })
+  async getActor (actorURL: string, fromActor?: string): Promise<APActor> {
+    let response
 
-    // throq if response not ok or if inbox isn't a string
+    if (typeof fromActor === 'string' && fromActor.trim() !== '') {
+      // Use signed fetch if fromActor is provided
+      response = await this.signedFetch(fromActor, {
+        url: actorURL,
+        method: 'GET',
+        headers: { Accept: 'application/ld+json' }
+      })
+    } else {
+      // Use regular fetch if fromActor is not provided
+      response = await this.fetch(actorURL, {
+        headers: { Accept: 'application/ld+json' }
+      })
+    }
+
+    // Check if response is not okay and throw an error
     if (!response.ok) {
       throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
     }
 
-    // TODO: Support html pages with a link rel in them
     try {
-    // TODO: Verify structure?
-      const actor = (await response.json()) as APActor
-
+      // TODO: Verify structure?
+      const actor = await response.json() as APActor
       return actor
     } catch (cause) {
       throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
     }
   }
 
-  async getInbox (actorURL: string): Promise<string> {
-    const actor = await this.getActor(actorURL)
+  async getInbox (actorURL: string, fromActor: string): Promise<string> {
+    const actor = await this.getActor(actorURL, fromActor)
     // TODO do proper json-ld resolving
     return actor.inbox as string
     // get inbox url and return
   }
 
   // Turns urls like https://domain.com/example into @example@domain.com
-  async actorToMention (actorURL: string): Promise<string> {
-    const actor = await this.getActor(actorURL)
-    const { preferredUsername } = actor
+  async actorToMention (actorURL: string, fromActor?: string): Promise<string> {
+    let actor
 
+    if (typeof fromActor === 'string' && fromActor.trim() !== '') {
+      // Use signed fetch if fromActor is provided
+      actor = await this.getActor(actorURL, fromActor)
+    } else {
+      // Use regular fetch if fromActor is not provided
+      const response = await this.fetch(actorURL, {
+        headers: { Accept: 'application/ld+json' }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status}`)
+      }
+
+      try {
+        actor = await response.json() as APActor
+      } catch (cause) {
+        throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
+      }
+    }
+
+    const { preferredUsername } = actor
     if (preferredUsername === undefined) {
       throw new Error(`Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
     }
@@ -278,7 +305,7 @@ export default class ActivityPubSystem {
       throw new Error('Activities must contain an actor string')
     }
 
-    const mention = await this.actorToMention(activityActor)
+    const mention = await this.actorToMention(activityActor, fromActor)
 
     const moderationState = await this.modCheck.check(mention, fromActor)
 
@@ -355,7 +382,7 @@ export default class ActivityPubSystem {
 
     await this.sendTo(followerURL, fromActor, response)
 
-    const webmention = await this.actorToMention(followerURL)
+    const webmention = await this.actorToMention(followerURL, fromActor)
 
     await this.store.forActor(fromActor).followers.add([webmention])
   }
@@ -382,7 +409,7 @@ export default class ActivityPubSystem {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)
 
-    const profile = await this.getActor(actorURL)
+    const profile = await this.getActor(actorURL, fromActor)
     let followersURL = profile.followers
     // TODO: handle array of string?
     if (typeof followersURL !== 'string') {
