@@ -3,6 +3,7 @@ import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
 import HookSystem from './hooksystem.js'
+import { XMLParser } from 'fast-xml-parser'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -30,7 +31,9 @@ export interface HostMetaLink {
 }
 
 export interface HostMeta {
-  links: HostMetaLink[]
+  XRD: {
+    Link: HostMetaLink[]
+  }
 }
 
 export type FetchLike = typeof globalThis.fetch
@@ -283,8 +286,11 @@ export default class ActivityPubSystem {
         throw new Error(`Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`)
       }
 
-      const hostMeta: HostMeta = await hostMetaResponse.json()
-      const webfingerTemplate = hostMeta.links.find((link: HostMetaLink) => link.rel === 'lrdd' && link.template)?.template
+      const hostMetaText = await hostMetaResponse.text()
+      const parser = new XMLParser()
+      const hostMeta: HostMeta = parser.parse(hostMetaText)
+
+      const webfingerTemplate = hostMeta.XRD.Link.find((link: HostMetaLink) => link.rel === 'lrdd' && link.template)?.template
 
       if (typeof webfingerTemplate !== 'string' || webfingerTemplate.length === 0) {
         throw new Error(`Webfinger template not found in host-meta data at ${hostMetaURL}`)
