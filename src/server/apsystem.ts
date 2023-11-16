@@ -3,6 +3,7 @@ import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
 import HookSystem from './hooksystem.js'
+import { XMLParser } from 'fast-xml-parser'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -21,6 +22,18 @@ export interface BasicFetchParams {
   method?: string
   headers: { [headerName: string]: string }
   body?: string
+}
+
+export interface HostMetaLink {
+  rel: string
+  template?: string
+  href?: string
+}
+
+export interface HostMeta {
+  XRD: {
+    Link: HostMetaLink[]
+  }
 }
 
 export type FetchLike = typeof globalThis.fetch
@@ -257,37 +270,51 @@ export default class ActivityPubSystem {
 
   async mentionToActor (mention: string): Promise<string> {
     const { username, domain } = parseMention(mention)
-    const acct = `acct:${username}@${domain}`
-    // TODO: dynamically determine the parameter name from the host-meta file
-    const mentionURL = `https://${domain}/.well-known/webfinger?resource=${acct}`
+    let webfingerURL = `https://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
 
-    const response = await this.fetch(mentionURL)
+    let response = await this.fetch(webfingerURL)
 
-    // throq if response not ok or if inbox isn't a string
+    if (!response.ok && response.status === 404) {
+      const hostMetaURL = `https://${domain}/.well-known/host-meta`
+      const hostMetaResponse = await this.signedFetch(this.publicURL, {
+        url: hostMetaURL,
+        method: 'GET',
+        headers: {}
+      })
+
+      if (!hostMetaResponse.ok) {
+        throw new Error(`Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`)
+      }
+
+      const hostMetaText = await hostMetaResponse.text()
+      const parser = new XMLParser()
+      const hostMeta: HostMeta = parser.parse(hostMetaText)
+
+      const webfingerTemplate = hostMeta.XRD.Link.find((link: HostMetaLink) => link.rel === 'lrdd' && link.template)?.template
+
+      if (typeof webfingerTemplate !== 'string' || webfingerTemplate.length === 0) {
+        throw new Error(`Webfinger template not found in host-meta data at ${hostMetaURL}`)
+      }
+
+      webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
+      response = await this.fetch(webfingerURL)
+    }
+
     if (!response.ok) {
-      throw new Error(`Cannot fetch webmention data from ${mentionURL}: http status ${response.status} - ${await response.text()}`)
+      throw new Error(`Cannot fetch webmention data from ${webfingerURL}: http status ${response.status}`)
     }
 
-    const { subject, links } = await response.json().catch((cause) => {
-      throw new Error(`Unable to parse webmention JSON at ${mentionURL}`, { cause })
-    })
-    if (subject !== acct) {
-      throw new Error(`Webmention endpoint returned invalid subject. Extepcted ${acct} at ${mentionURL}, got ${subject as string}`)
+    const { subject, links } = await response.json()
+    if (subject !== `acct:${username}@${domain}`) {
+      throw new Error(`Webmention endpoint returned invalid subject for ${webfingerURL}`)
     }
 
-    if (!Array.isArray(links)) {
-      throw new Error(`Expected links array in webmention endpoint for ${mentionURL}`)
+    const actorLink = links.find((link: HostMetaLink) => link.rel === 'self')
+    if (typeof actorLink?.href !== 'string' || actorLink.href.trim().length === 0) {
+      throw new Error(`Unable to find actor link from webmention at ${webfingerURL}`)
     }
 
-    for (const { rel, type, href } of links) {
-      if (rel !== 'self') continue
-      // TODO: Throw an error?
-      if (typeof type !== 'string') continue
-      if (!type.includes('application/activity+json') && !type.includes('application/ld+json')) continue
-      return href
-    }
-
-    throw new Error(`Unable to find ActivityPub link from webmentions at ${mentionURL}`)
+    return actorLink.href
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {

@@ -133,6 +133,39 @@ test('getActor uses regular fetch when fromActor is not provided', async t => {
   }, 'getActor should use regular fetch when fromActor is not provided')
 })
 
+// Test for successful Webfinger fetch with fallback to Host-Meta
+test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404', async t => {
+  const mention = '@test@domain.com'
+  const hostMetaXML = `<?xml version="1.0" encoding="UTF-8"?>
+<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0">
+  <Link rel="lrdd" template="https://domain.com/.well-known/webfinge/{uri}"/>
+</XRD>`
+
+  // Create a single stub for the fetch method
+  const fetchStub = sinon.stub(aps, 'fetch')
+
+  // Configure responses for different URLs
+  fetchStub
+    .withArgs(sinon.match(/webfinger/))
+    .returns(Promise.resolve(new Response(null, { status: 404 }))) // 404 for Webfinger
+
+  fetchStub
+    .withArgs(sinon.match(/host-meta/))
+    .returns(Promise.resolve(new Response(hostMetaXML, { status: 200 }))) // Success for Host-Meta
+
+  fetchStub
+    .withArgs(sinon.match(/webfinge/))
+    .returns(Promise.resolve(
+      new Response(JSON.stringify({
+        subject: 'acct:test@domain.com',
+        links: [{ rel: 'self', href: 'http://actor.url' }]
+      }), { status: 200 })
+    )) // Success for the actual webmention URL
+
+  const result = await aps.mentionToActor(mention)
+  t.is(result, 'http://actor.url', 'should fetch from Webfinger and fallback to Host-Meta on 404')
+})
+
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
   // Restore all sinon mocks
