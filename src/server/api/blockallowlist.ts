@@ -10,7 +10,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     schema: {
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get global list of blocked users/instances as newline delimited string.',
       tags: ['Moderation']
@@ -18,7 +18,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const blockedAccounts = await store.blocklist.list()
@@ -34,7 +34,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Add accounts to the global blocklist using newline delimited format.',
       tags: ['Moderation']
@@ -42,7 +42,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -59,7 +59,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Remove accounts to the global blocklist using newline delimited format.',
       tags: ['Moderation']
@@ -67,7 +67,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -80,7 +80,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     schema: {
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get global list of auto-approved instances and users, newline delimited string.',
       tags: ['Moderation']
@@ -88,7 +88,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const allowedAccounts = await store.allowlist.list()
@@ -104,7 +104,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Add accounts to the global allowlist using newline delimited format.',
       tags: ['Moderation']
@@ -112,7 +112,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -129,7 +129,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Remove accounts to the global allowlist using newline delimited format.',
       tags: ['Moderation']
@@ -137,7 +137,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -157,7 +157,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       }),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get list of blocked users/instances for a actor as newline delimited string.',
       tags: ['Moderation']
@@ -166,7 +166,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const blockedAccounts = await store.forActor(actor).blocklist.list()
@@ -188,7 +188,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Add to the blocklist for a actor. Takes newline delimited list in body.',
       tags: ['Moderation']
@@ -197,7 +197,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -220,7 +220,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Remove from list, newline delimited body.',
       tags: ['Moderation']
@@ -229,7 +229,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -249,7 +249,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       }),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get list of auto-approved instances and users, newline delimited string.',
       tags: ['Moderation']
@@ -258,7 +258,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const allowedAccounts = await store.forActor(actor).allowlist.list()
@@ -280,7 +280,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Add to the allowlist, newline delimted list in body.',
       tags: ['Moderation']
@@ -289,7 +289,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -312,7 +312,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Remove from allowlist, newline delimited body.',
       tags: ['Moderation']
@@ -321,7 +321,7 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')

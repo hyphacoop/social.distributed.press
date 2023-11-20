@@ -28,7 +28,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const orderedItems = await store.forActor(actor).inbox.list()
@@ -109,7 +109,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
     await apsystem.rejectActivity(actor, id)
     return await reply.send('ok')
@@ -139,7 +139,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     await apsystem.approveActivity(actor, id)

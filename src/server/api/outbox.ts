@@ -23,7 +23,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
       body: Type.Object({}),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'ActivityPub outbox for notifying followers',
       tags: ['ActivityPub']
@@ -32,7 +32,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const activity = request.body
@@ -56,7 +56,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
       response: {
       // TODO: typebox apactivity
         200: Type.Object({}),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get items that got sent out by the instance. Fetched by other instances to verify accept/rejects for follows.',
       tags: ['ActivityPub']
@@ -65,7 +65,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
     const { actor, id } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const activity = await apsystem.getOutboxItem(actor, id)

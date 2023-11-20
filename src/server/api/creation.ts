@@ -20,7 +20,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       body: ActorInfoSchema,
       response: {
         200: ActorInfoSchema,
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Register a new actor for the social inbox',
       tags: ['Creation']
@@ -30,7 +30,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
 
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const info = request.body
@@ -51,7 +51,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       }),
       response: {
         200: ActorInfoSchema,
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Load your actor info',
       tags: ['Creation']
@@ -60,7 +60,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const info = await store.forActor(actor).getInfo()
@@ -79,7 +79,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       }),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Delete a actor',
       tags: ['Creation']
@@ -88,7 +88,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     await store.forActor(actor).delete()

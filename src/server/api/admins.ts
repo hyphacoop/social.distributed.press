@@ -10,7 +10,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     schema: {
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Get global list of admins as newline delimited string.',
       tags: ['Moderation']
@@ -18,7 +18,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const admins = await store.admins.list()
@@ -34,7 +34,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Add accounts to the global admin list using newline delimited format.',
       tags: ['Moderation']
@@ -42,7 +42,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')
@@ -59,7 +59,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       body: Type.String(),
       response: {
         200: Type.String(),
-        409: Type.String()
+        403: Type.String()
       },
       description: 'Remove accounts from the global admins list using newline delimited format.',
       tags: ['Moderation']
@@ -67,7 +67,7 @@ export const adminRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const allowed = await apsystem.hasAdminPermissionForRequest(request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const accounts = request.body.split('\n')

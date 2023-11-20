@@ -97,7 +97,7 @@ export default class ActivityPubSystem {
     const isAllowed = await this.modCheck.isAllowed(mention, fromActor)
 
     if (!isAllowed) {
-    // TODO: HTTP status code 409?
+    // TODO: HTTP status code 403?
       throw new Error(`Blocked actor ${mention}`)
     }
 

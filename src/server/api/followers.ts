@@ -24,7 +24,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     const collection = await apsystem.followersCollection(actor)
@@ -51,7 +51,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const { actor, follower } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
-      return await reply.code(409).send('Not Allowed')
+      return await reply.code(403).send('Not Allowed')
     }
 
     // TODO: Notify folks via APSystem
