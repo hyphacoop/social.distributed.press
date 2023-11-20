@@ -54,7 +54,8 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       return await reply.code(403).send('Not Allowed')
     }
 
-    // TODO: Notify folks via APSystem
+    // TODO: Notify folks via APSystem. Should emit Undo for Accept
+    // https://github.com/trustbloc/orb/issues/118
     await store.forActor(actor).followers.remove([follower])
 
     return await reply.send('OK')
