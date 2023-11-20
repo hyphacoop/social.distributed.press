@@ -37,7 +37,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       actor: string
       follower: string
     }
-    Reply: APCollection | string
+    Reply: string
   }>('/:actor/followers/:follower', {
     schema: {
       params: Type.Object({
@@ -52,6 +52,12 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
+    }
+
+    const exists = await store.forActor(actor).followers.has(follower)
+
+    if (!exists) {
+      return await reply.code(404).send('Not Found')
     }
 
     // TODO: Notify folks via APSystem. Should emit Undo for Accept

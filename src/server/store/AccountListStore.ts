@@ -53,6 +53,16 @@ export class AccountListStore {
     }
   }
 
+  async has (username: string): Promise<boolean> {
+    const key = this.patternToKey(username)
+    try {
+      await this.db.get(key)
+      return true // found an exact match
+    } catch (error) {
+      return false // no exact match found
+    }
+  }
+
   async add (patterns: string[]): Promise<void> {
     const batch = this.db.batch()
     patterns.forEach((pattern) => {
