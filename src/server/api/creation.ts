@@ -28,9 +28,11 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
   }, async (request, reply) => {
     const { actor } = request.params
 
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
-    if (!allowed) {
-      return await reply.code(403).send('Not Allowed')
+    if (await store.admins.matches(actor)) {
+      const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+      if (!allowed) {
+        return await reply.code(403).send('Not Allowed')
+      }
     }
 
     const info = request.body
