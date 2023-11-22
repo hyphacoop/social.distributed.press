@@ -63,8 +63,9 @@ export default class ActivityPubSystem {
     return this.publicURL + path
   }
 
-  async hasPermissionActorRequest (forActor: string, request: FastifyRequest): Promise<boolean> {
-    const resolvedActor = await this.verifySignedRequest(request, forActor)
+  async hasPermissionActorRequest (forActor: string, request: FastifyRequest, signed: boolean = true): Promise<boolean> {
+    const fromActor = signed ? forActor : undefined
+    const resolvedActor = await this.verifySignedRequest(request, fromActor)
 
     if (resolvedActor === forActor) {
       return true
