@@ -3,15 +3,22 @@
   "version": "1.0.0",
   "description": "API for the Distributed Press Social Inbox",
   "main": "dist/index.js",
+  "bin": {
+    "distributed-press-social": "dist/bin.js"
+  },
   "type": "module",
+  "files": [
+    "dist/*"
+  ],
   "scripts": {
     "generate-identity": "ts-node-esm src/scripts/generate-identity.ts",
     "import-blocklist": "ts-node-esm src/scripts/import-blocklist.ts",
     "import-admins": "ts-node-esm src/scripts/import-admins.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
-    "dev": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
-    "start": "node dist/server/index.js | pino-pretty -c -t",
+    "dev": "ts-node-esm src/bin.ts run | pino-pretty -c -t",
+    "start": "node dist/bin.js run | pino-pretty -c -t",
     "prestart": "npm run build",
+    "prepublish": "npm run build",
     "build": "tsc",
     "test": "ava --concurrency 1 --timeout=1m"
   },

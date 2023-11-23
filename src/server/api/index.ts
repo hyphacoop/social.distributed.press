@@ -21,8 +21,6 @@ import ActivityPubSystem from '../apsystem.js'
 import HookSystem from '../hooksystem.js'
 import { ModerationChecker } from '../moderation.js'
 
-import { ServerI } from '../index.js'
-
 import { inboxRoutes } from './inbox.js'
 import { outboxRoutes } from './outbox.js'
 import { creationRoutes } from './creation.js'
@@ -32,6 +30,13 @@ import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
 
 export const paths = envPaths('distributed-press')
+
+export interface ServerI {
+  port: number
+  host: string
+  storage: string
+  publicURL: string
+}
 
 export type FastifyTypebox = FastifyInstance<
 RawServerDefault,

@@ -1,7 +1,6 @@
 # social.distributed.press
 A Social Inbox for Decentralized Publishing and ActivityPub
 
-
 ## How it works
 
 This server runs a minimal implementation of an [ActivityPub Inbox and Outbox](https://activitypub.rocks/).
