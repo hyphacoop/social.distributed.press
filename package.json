@@ -1,0 +1,93 @@
+{
+  "name": "distributed-press-social",
+  "version": "1.0.0",
+  "description": "API for the Distributed Press Social Inbox",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "generate-identity": "ts-node-esm src/scripts/generate-identity.ts",
+    "import-blocklist": "ts-node-esm src/scripts/import-blocklist.ts",
+    "import-admins": "ts-node-esm src/scripts/import-admins.ts",
+    "lint": "ts-standard --fix && tsc --noEmit",
+    "dev": "ts-node-esm src/server/index.ts | pino-pretty -c -t",
+    "start": "node dist/server/index.js | pino-pretty -c -t",
+    "prestart": "npm run build",
+    "build": "tsc",
+    "test": "ava --concurrency 1 --timeout=1m"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyphacoop/social.distributed.press.git"
+  },
+  "author": "Distributed Press",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/hyphacoop/social.distributed.press/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@digitalbazaar/http-digest-header": "^2.0.0",
+    "@fastify/auth": "^4.2.0",
+    "@fastify/jwt": "^6.5.0",
+    "@fastify/multipart": "^7.3.0",
+    "@fastify/swagger": "^8.2.0",
+    "@fastify/swagger-ui": "^1.3.0",
+    "@fastify/type-provider-typebox": "^2.4.0",
+    "@sinclair/typebox": "^0.25.9",
+    "abstract-level": "^1.0.3",
+    "activitypub-http-signatures": "^2.0.1",
+    "activitypub-types": "^1.0.3",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.0",
+    "csv-parser": "^3.0.0",
+    "dns2": "^2.1.0",
+    "env-paths": "^3.0.0",
+    "express": "^4.17.1",
+    "fast-jwt": "^2.0.2",
+    "fast-xml-parser": "^4.3.2",
+    "fastify": "^4.10.2",
+    "fastify-metrics": "^10.0.0",
+    "fastify-plugin": "^4.4.0",
+    "fs": "0.0.1-security",
+    "get-port": "^6.1.2",
+    "is-valid-hostname": "^1.0.2",
+    "level": "^8.0.0",
+    "make-dir": "^3.1.0",
+    "nanoid": "^4.0.0",
+    "prom-client": "^14.1.0",
+    "yargs": "^17.6.2"
+  },
+  "devDependencies": {
+    "@ava/typescript": "^3.0.1",
+    "@types/node": "^18.11.13",
+    "@types/sinon": "^10.0.16",
+    "@types/yargs": "^17.0.17",
+    "ava": "^5.1.1",
+    "memory-level": "^1.0.0",
+    "nodemon": "^2.0.20",
+    "pino-pretty": "^9.1.1",
+    "sinon": "^15.2.0",
+    "ts-node": "^10.9.1",
+    "ts-standard": "^12.0.2",
+    "typescript": "^4.9.3"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--loader=ts-node/esm",
+      "--no-warnings"
+    ]
+  },
+  "ts-standard": {
+    "ignore": [
+      "build"
+    ],
+    "rules": {
+      "@typescript-eslint/no-non-null-assertion": 0
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "include": [
+    "src/**/*",
+    "scripts/*",
+    "@types/*"
+  ],
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "sourceMap": true,
+    "declaration": true,
+    "strict": true,
+
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "typeRoots": ["./@types"]
+  },
+  "ts-node": {
+    "files": true,
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
+  }
+}
