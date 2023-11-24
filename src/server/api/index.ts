@@ -10,7 +10,6 @@ import swagger from '@fastify/swagger'
 import swagger_ui from '@fastify/swagger-ui'
 import metrics from 'fastify-metrics'
 
-import path from 'node:path'
 import envPaths from 'env-paths'
 
 import { Level } from 'level'
@@ -55,11 +54,10 @@ export type APIConfig = Partial<{
 }> & ServerI
 
 async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
-  const basePath = cfg.storage ?? paths.data
-  const cfgStoragePath = path.join(basePath, 'cfg')
+  const storagePath = cfg.storage ?? paths.data
   const db = cfg.useMemoryBackedDB === true
     ? new MemoryLevel({ valueEncoding: 'json' })
-    : new Level(cfgStoragePath, { valueEncoding: 'json' })
+    : new Level(storagePath, { valueEncoding: 'json' })
 
   const server = fastify({
     logger: cfg.useLogging,

@@ -19,6 +19,7 @@ if (list.length === 0) {
   console.log(`No admins specified. Please use the following format to add them:
 npm run import-admins -- --list @admin1@example.com --list @*@example2.com
 `)
+  process.exit(1)
 }
 
 const db = new Level(storage, { valueEncoding: 'json' })
@@ -28,3 +29,8 @@ const store = new Store(db)
 console.log(`Adding admins to store to store:\n${storage}`)
 console.log(list)
 await store.admins.add(list)
+
+const final = await store.admins.list()
+
+console.log('Final admin list:')
+console.log(final)
