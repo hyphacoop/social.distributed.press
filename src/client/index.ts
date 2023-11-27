@@ -1,15 +1,18 @@
 import { APActivity } from 'activitypub-types'
-
+import { fetch as signedFetch, generateKeypair } from 'http-signed-fetch'
 import { KeyPair } from '../keypair.js'
 import { ActorInfo } from '../schemas.js'
 
-export type FetchLike = typeof globalThis.fetch
+export type SignedFetchLike = (
+  url: RequestInfo,
+  init?: RequestInit & { publicKeyId: string, keypair: KeyPair }
+) => Promise<Response>
 
 export interface SocialInboxOptions {
   instance: string
   account: string
-  keypair: KeyPair
-  fetch?: FetchLike
+  keypair: ReturnType<typeof generateKeypair>
+  fetch?: SignedFetchLike
 }
 
 const TYPE_TEXT = 'text/plain'
@@ -30,14 +33,14 @@ type VALID_TYPES = typeof TYPE_TEXT | typeof TYPE_JSON | typeof TYPE_LDJSON | un
 export class SocialInboxClient {
   instance: string
   account: string
-  keypair: KeyPair
-  fetch: FetchLike
+  keypair: ReturnType<typeof generateKeypair>
+  fetch: SignedFetchLike
 
   constructor (options: SocialInboxOptions) {
     this.instance = options.instance
     this.account = options.account
     this.keypair = options.keypair
-    this.fetch = options.fetch ?? globalThis.fetch
+    this.fetch = options.fetch ?? signedFetch
   }
 
   async sendRequest (method: VALID_METHODS, path: string, contentType?: VALID_TYPES, data?: any): Promise<Response> {
@@ -50,13 +53,14 @@ export class SocialInboxClient {
 
     const finalContentType = contentType ?? TYPE_TEXT
 
-    // TODO: Signing
     const response = await this.fetch(url, {
       method,
       headers: {
         'Content-Type': finalContentType
       },
-      body
+      body,
+      publicKeyId: this.keypair.publicKeyId,
+      keypair: this.keypair
     })
 
     if (!response.ok) {
