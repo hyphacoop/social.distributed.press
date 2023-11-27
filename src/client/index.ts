@@ -15,6 +15,12 @@ export interface SocialInboxOptions {
   fetch?: SignedFetchLike
 }
 
+export interface Hook {
+  url: string
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  headers: { [name: string]: string }
+}
+
 const TYPE_TEXT = 'text/plain'
 const TYPE_LDJSON = 'applicatin/ld+json'
 const TYPE_JSON = 'application/json'
@@ -158,7 +164,8 @@ export class SocialInboxClient {
     return await response.json()
   }
 
-  async setHook (actor: string, hookType: string, hook: any): Promise<void> {
+  async setHook (actor: string, hookType: string, url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', headers: { [name: string]: string }): Promise<void> {
+    const hook = { url, method, headers }
     await this.sendRequest(PUT, `/${actor}/hooks/${hookType}`, TYPE_JSON, hook)
   }
 

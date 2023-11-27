@@ -115,22 +115,30 @@ test('Follower Management', async t => {
 })
 
 test('Hook Management', async t => {
-  const mockHook = { url: 'https://test.hook/endpoint', secret: 'secretKey' }
+  // Updated mockHook to explicitly set the method type
+  const mockHook = {
+    url: 'https://test.hook/endpoint',
+    method: 'POST' as 'POST', // Explicitly typing the method
+    headers: { 'Content-Type': 'application/json' }
+  }
 
   // Mock Get Hook
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match.any).resolves(new Response(JSON.stringify(mockHook)))
+  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match.any)
+    .resolves(new Response(JSON.stringify(mockHook)))
 
   // Mock Set Hook
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match({ method: 'POST' })).resolves(new Response())
+  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match({ method: 'PUT' }))
+    .resolves(new Response())
 
   // Mock Delete Hook
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match({ method: 'DELETE' })).resolves(new Response())
+  mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match({ method: 'DELETE' }))
+    .resolves(new Response())
 
   const hook = await client.getHook('testActor', 'testHook')
   t.deepEqual(hook, mockHook)
 
   await t.notThrowsAsync(async () => {
-    await client.setHook('testActor', 'testHook', mockHook)
+    await client.setHook('testActor', 'testHook', mockHook.url, mockHook.method, mockHook.headers)
   })
 
   await t.notThrowsAsync(async () => {
