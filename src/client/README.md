@@ -51,6 +51,8 @@ await client.deleteActor("actorName");
 
 List Admins
 
+Returns the global blocklist as an array of strings, each in the format `@username@domain`.
+
 ```javascript
 const admins = await client.listAdmins();
 ```
@@ -70,6 +72,8 @@ await client.removeAdmins(["admin1@example.com"]);
 ### Blocklist Management
 
 Fetch Global Blocklist
+
+Returns the global blocklist as an array of strings, each in the format `@username@domain`.
 
 ```javascript
 const blocklist = await client.getGlobalBlocklist();
@@ -91,6 +95,8 @@ await client.removeGlobalBlocklist(["user1@example.com"]);
 
 Fetch Global Allowlist
 
+Returns the global allowlist as an array of strings, each in the format `@username@domain`.
+
 ```javascript
 const allowlist = await client.getGlobalAllowlist();
 ```
@@ -110,6 +116,8 @@ await client.removeGlobalAllowlist(["user2@example.com"]);
 ### Follower Management
 
 List Followers
+
+Lists the followers of a specified actor, returning them in an array of strings in the format `@username@domain`.
 
 ```javascript
 const followers = await client.listFollowers("actorName");
