@@ -23,7 +23,7 @@ import { SocialInboxClient } from "social-inbox-client";
 
 const client = new SocialInboxClient({
   instance: "https://your.instance.url",
-  account: "yourAccount",
+  account: "@yourAccount@yourdomain",
   keypair: {
     publicKeyPem: "yourPublicKeyPem",
     privateKeyPem: "yourPrivateKeyPem",
@@ -38,7 +38,7 @@ const client = new SocialInboxClient({
 Fetch Actor Information
 
 ```javascript
-const actorInfo = await client.getActorInfo("actorName");
+const actorInfo = await client.getActorInfo("@actor@domain");
 ```
 
 Delete an Actor
