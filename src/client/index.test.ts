@@ -169,13 +169,21 @@ test('Outbox Management', async t => {
   // Mock Post to Outbox
   mockSignedFetch.withArgs(`${instance}/v1/testActor/outbox`, sinon.match({ method: 'POST' })).resolves(new Response())
 
-  // Mock Fetch Outbox Item
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/outbox/123`, sinon.match.any).resolves(new Response(JSON.stringify(mockOutboxItem)))
+  // Mock Fetch Outbox Item for default actor
+  mockSignedFetch.withArgs(`${instance}/v1/${account}/outbox/123`, sinon.match.any).resolves(new Response(JSON.stringify(mockOutboxItem)))
+
+  // Mock Fetch Outbox Item for a specific actor
+  mockSignedFetch.withArgs(`${instance}/v1/specificActor/outbox/123`, sinon.match.any).resolves(new Response(JSON.stringify(mockOutboxItem)))
 
   await t.notThrowsAsync(async () => {
     await client.postToOutbox('testActor', { type: 'Note', content: 'Test note' })
   })
 
-  const outboxItem = await client.fetchOutboxItem('testActor', '123')
-  t.deepEqual(outboxItem, mockOutboxItem)
+  // Test fetching outbox item for default actor
+  const defaultActorOutboxItem = await client.fetchOutboxItem('123')
+  t.deepEqual(defaultActorOutboxItem, mockOutboxItem)
+
+  // Test fetching outbox item for a specific actor
+  const specificActorOutboxItem = await client.fetchOutboxItem('123', 'specificActor')
+  t.deepEqual(specificActorOutboxItem, mockOutboxItem)
 })

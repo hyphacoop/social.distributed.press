@@ -199,7 +199,7 @@ export class SocialInboxClient {
     await this.sendRequest(POST, `/${actor}/outbox`, TYPE_LDJSON, activity)
   }
 
-  async fetchOutboxItem (actor: string, itemId: string): Promise<APActivity> {
+  async fetchOutboxItem (itemId: string, actor: string = this.account): Promise<APActivity> {
     const response = await this.sendRequest(GET, `/${actor}/outbox/${itemId}`)
     return await response.json()
   }
