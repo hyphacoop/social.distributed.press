@@ -136,7 +136,10 @@ Set a Hook
 ```javascript
 const hook = {
   url: "https://webhook.endpoint",
-  secret: "yourSecret",
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  }
 };
 await client.setHook("actorName", "hookType", hook);
 ```
