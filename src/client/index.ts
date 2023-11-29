@@ -59,14 +59,17 @@ export class SocialInboxClient {
 
     const finalContentType = contentType ?? TYPE_TEXT
 
+    // Extract publicKeyId from this.keypair
+    const { publicKeyId, ...keypairWithoutId } = this.keypair
+
     const response = await this.fetch(url, {
       method,
       headers: {
         'Content-Type': finalContentType
       },
       body,
-      publicKeyId: this.keypair.publicKeyId,
-      keypair: this.keypair
+      keypair: keypairWithoutId,
+      publicKeyId
     })
 
     if (!response.ok) {
