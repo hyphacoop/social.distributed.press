@@ -166,10 +166,18 @@ const inboxItems = await client.fetchInbox("actorName");
 
 Post to Inbox
 
+For more details on the ActivityPub Activity format, refer to the [official ActivityPub documentation](https://www.w3.org/TR/activitypub/#activities).
+
 ```javascript
 const activity = {
-  type: "Note",
-  content: "Hello world",
+  '@context': 'https://www.w3.org/ns/activitystreams',
+  type: 'Create',
+  actor: 'https://example.com/user1',
+  object: {
+    type: 'Note',
+    content: 'Hello world',
+    id: 'https://example.com/note1'
+  }
 };
 await client.postToInbox("actorName", activity);
 ```
