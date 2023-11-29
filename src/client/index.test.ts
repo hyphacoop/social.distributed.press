@@ -1,6 +1,8 @@
 import test from 'ava'
+import http from 'http'
 import sinon from 'sinon'
 import { SocialInboxClient } from './index'
+import { generateKeypair } from 'http-signed-fetch'
 
 const instance = 'https://test.instance'
 const account = 'testAccount'
@@ -12,6 +14,41 @@ const keypair = {
 const mockSignedFetch = sinon.stub()
 
 const client = new SocialInboxClient({ instance, account, keypair, fetch: mockSignedFetch })
+
+async function startTestServer (port: number): Promise<http.Server> {
+  return await new Promise<http.Server>((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ message: 'success' }))
+    })
+
+    server.listen(port, () => resolve(server))
+  })
+}
+
+test('Local Server Communication', async t => {
+  const port = 3000
+  const server = await startTestServer(port)
+
+  const client = new SocialInboxClient({
+    instance: `http://localhost:${port}`,
+    account: 'testAccount',
+    keypair: generateKeypair(),
+    fetch: globalThis.fetch
+  })
+
+  try {
+    const response = await client.sendRequest('GET', '/test-path')
+    const data = await response.json()
+    t.deepEqual(data, { message: 'success' })
+  } catch (error) {
+    if (error instanceof Error) {
+      t.fail(`Error during request: ${error.message}`)
+    }
+  } finally {
+    server.close()
+  }
+})
 
 // Reset mocks before each test
 test.beforeEach(() => {
