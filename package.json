@@ -59,6 +59,7 @@
     "fastify-plugin": "^4.4.0",
     "fs": "0.0.1-security",
     "get-port": "^6.1.2",
+    "http-signed-fetch": "^1.0.1",
     "is-valid-hostname": "^1.0.2",
     "level": "^8.0.0",
     "make-dir": "^3.1.0",
