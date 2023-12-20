@@ -115,18 +115,25 @@ await client.removeGlobalAllowlist(["user2@example.com"]);
 
 ### Follower Management
 
-List Followers
+#### List Followers
 
-Lists the followers of a specified actor, returning them in an array of strings in the format `@username@domain`.
+Lists the followers of an actor. By default, it lists the followers of the actor associated with the client instance. The return format is an array of strings, each in the format `@username@domain`.
 
+**Listing followers for the default actor:**
 ```javascript
-const followers = await client.listFollowers("actorName");
+const defaultFollowers = await client.listFollowers();
 ```
+
+**Listing followers for a specific actor:**
+```javascript
+const specificFollowers = await client.listFollowers("specificActorName");
+```
+
 
 Remove a Follower
 
 ```javascript
-await client.removeFollower("actorName", "follower@example.com");
+await client.removeFollower("follower@example.com", "actorName");
 ```
 
 ### Hook Management
@@ -141,27 +148,33 @@ const hook = {
     "Content-Type": "application/json"
   }
 };
-await client.setHook("actorName", "hookType", hook);
+await client.setHook("hookType", hook, "actorName");
 ```
 
 Fetch a Hook
 
 ```javascript
-const existingHook = await client.getHook("actorName", "hookType");
+const existingHook = await client.getHook("hookType", "actorName");
 ```
 
 Delete a Hook
 
 ```javascript
-await client.deleteHook("actorName", "hookType");
+await client.deleteHook("hookType", "actorName");
 ```
 
 ### Inbox Management
 
-Fetch Inbox
+#### Fetch Inbox
 
+**Fetching inbox for the default actor:**
 ```javascript
-const inboxItems = await client.fetchInbox("actorName");
+const inboxItemsDefault = await client.fetchInbox();
+```
+
+**Fetching inbox for a specific actor:**
+```javascript
+const inboxItemsSpecific = await client.fetchInbox("specificActorName");
 ```
 
 Post to Inbox
@@ -179,19 +192,19 @@ const activity = {
     id: 'https://example.com/note1'
   }
 };
-await client.postToInbox("actorName", activity);
+await client.postToInbox(activity, "actorName");
 ```
 
 Approve an Inbox Item
 
 ```javascript
-await client.approveInboxItem("actorName", "itemId");
+await client.approveInboxItem("itemId", "actorName");
 ```
 
 Reject an Inbox Item
 
 ```javascript
-await client.rejectInboxItem("actorName", "itemId");
+await client.rejectInboxItem("itemId", "actorName");
 ```
 
 ### Outbox Management
@@ -199,11 +212,11 @@ await client.rejectInboxItem("actorName", "itemId");
 Post to Outbox
 
 ```javascript
-await client.postToOutbox("actorName", activity);
+await client.postToOutbox(activity, "actorName");
 ```
 
 Fetch an Outbox Item
 
 ```javascript
-const outboxItem = await client.fetchOutboxItem("actorName", "itemId");
+const outboxItem = await client.fetchOutboxItem("itemId", "actorName");
 ```
