@@ -147,7 +147,7 @@ test('Follower Management', async t => {
   t.deepEqual(followers, mockFollowers)
 
   await t.notThrowsAsync(async () => {
-    await client.removeFollower('testActor', 'follower1')
+    await client.removeFollower('follower1', 'testActor')
   })
 })
 
@@ -171,32 +171,32 @@ test('Hook Management', async t => {
   mockSignedFetch.withArgs(`${instance}/v1/testActor/hooks/testHook`, sinon.match({ method: 'DELETE' }))
     .resolves(new Response())
 
-  const hook = await client.getHook('testActor', 'testHook')
+  const hook = await client.getHook('testHook', 'testActor')
   t.deepEqual(hook, mockHook)
 
   await t.notThrowsAsync(async () => {
-    await client.setHook('testActor', 'testHook', mockHook.url, mockHook.method, mockHook.headers)
+    await client.setHook('testHook', mockHook.url, mockHook.method, mockHook.headers, 'testActor')
   })
 
   await t.notThrowsAsync(async () => {
-    await client.deleteHook('testActor', 'testHook')
+    await client.deleteHook('testHook', 'testActor')
   })
 })
 
 test('Inbox Management', async t => {
   const mockInboxItems = [{ type: 'Note', content: 'Hello world!' }]
 
-  // Mock Fetch Inbox
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/inbox`, sinon.match.any).resolves(new Response(JSON.stringify(mockInboxItems)))
+  // Mock Fetch Inbox for default actor
+  mockSignedFetch.withArgs(`${instance}/v1/${account}/inbox`, sinon.match.any).resolves(new Response(JSON.stringify(mockInboxItems)))
 
   // Mock Post to Inbox
   mockSignedFetch.withArgs(`${instance}/v1/testActor/inbox`, sinon.match({ method: 'POST' })).resolves(new Response())
 
-  const inboxItems = await client.fetchInbox('testActor')
+  const inboxItems = await client.fetchInbox()
   t.deepEqual(inboxItems, mockInboxItems)
 
   await t.notThrowsAsync(async () => {
-    await client.postToInbox('testActor', { type: 'Note', content: 'Test note' })
+    await client.postToInbox({ type: 'Note', content: 'Test note' }, 'testActor')
   })
 })
 
@@ -213,7 +213,7 @@ test('Outbox Management', async t => {
   mockSignedFetch.withArgs(`${instance}/v1/specificActor/outbox/123`, sinon.match.any).resolves(new Response(JSON.stringify(mockOutboxItem)))
 
   await t.notThrowsAsync(async () => {
-    await client.postToOutbox('testActor', { type: 'Note', content: 'Test note' })
+    await client.postToOutbox({ type: 'Note', content: 'Test note' }, 'testActor')
   })
 
   // Test fetching outbox item for default actor
