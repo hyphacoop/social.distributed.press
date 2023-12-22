@@ -4,6 +4,7 @@ import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
 import HookSystem from './hooksystem.js'
 import { XMLParser } from 'fast-xml-parser'
+import createError from 'http-errors'
 
 import type { FastifyRequest } from 'fastify'
 import {
@@ -98,15 +99,14 @@ export default class ActivityPubSystem {
     const isAllowed = await this.modCheck.isAllowed(mention, fromActor)
 
     if (!isAllowed) {
-    // TODO: HTTP status code 403?
-      throw new Error(`Blocked actor ${mention}`)
+      throw createError(403, `Blocked actor ${mention}`)
     }
 
     const actor: any = await this.getActor(keyId, fromActor)
 
     const publicKey = actor[keyField]
     if (publicKey?.publicKeyPem === undefined) {
-      throw new Error(`Unable to find public key at ${keyField} in ${keyId}`)
+      throw createError(404, `Unable to find public key at ${keyField} in ${keyId}`)
     }
 
     // Verify the signature
@@ -115,8 +115,7 @@ export default class ActivityPubSystem {
     )
 
     if (!success) {
-      // TODO: Better error
-      throw new Error(`Invalid HTTP signature for ${keyId}`)
+      throw createError(401, `Invalid HTTP signature for ${keyId}`)
     }
 
     // TODO: Handle getting the actor from something other than the key id??
@@ -194,7 +193,7 @@ export default class ActivityPubSystem {
 
     // Check if response has error and throw one if so
     if (!response.ok) {
-      throw new Error(`Cannot fetch actor data for ${fromActor}: http status ${response.status} - ${await response.text()}`)
+      throw createError(500, `Cannot fetch actor data for ${fromActor}: http status ${response.status} - ${await response.text()}`)
     }
   }
 
@@ -217,7 +216,7 @@ export default class ActivityPubSystem {
 
     // Check if response is not okay and throw an error
     if (!response.ok) {
-      throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
+      throw createError(500, `Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
     }
 
     try {
@@ -225,7 +224,7 @@ export default class ActivityPubSystem {
       const actor = await response.json() as APActor
       return actor
     } catch (cause) {
-      throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
+      throw createError(422, `Unable to parse actor JSON at ${actorURL}`, { cause })
     }
   }
 
@@ -250,19 +249,19 @@ export default class ActivityPubSystem {
       })
 
       if (!response.ok) {
-        throw new Error(`Cannot fetch actor data from ${actorURL}: http status ${response.status}`)
+        throw createError(500, `Cannot fetch actor data from ${actorURL}: http status ${response.status}`)
       }
 
       try {
         actor = await response.json() as APActor
       } catch (cause) {
-        throw new Error(`Unable to parse actor JSON at ${actorURL}`, { cause })
+        throw createError(422, `Unable to parse actor JSON at ${actorURL}`, { cause })
       }
     }
 
     const { preferredUsername } = actor
     if (preferredUsername === undefined) {
-      throw new Error(`Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
+      throw createError(404, `Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
     }
     const domain = new URL(actorURL).host
 
@@ -284,7 +283,7 @@ export default class ActivityPubSystem {
       })
 
       if (!hostMetaResponse.ok) {
-        throw new Error(`Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`)
+        throw createError(404, `Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`)
       }
 
       const hostMetaText = await hostMetaResponse.text()
@@ -294,7 +293,7 @@ export default class ActivityPubSystem {
       const webfingerTemplate = hostMeta.XRD.Link.find((link: HostMetaLink) => link.rel === 'lrdd' && link.template)?.template
 
       if (typeof webfingerTemplate !== 'string' || webfingerTemplate.length === 0) {
-        throw new Error(`Webfinger template not found in host-meta data at ${hostMetaURL}`)
+        throw createError(404, `Webfinger template not found in host-meta data at ${hostMetaURL}`)
       }
 
       webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
@@ -302,17 +301,17 @@ export default class ActivityPubSystem {
     }
 
     if (!response.ok) {
-      throw new Error(`Cannot fetch webmention data from ${webfingerURL}: http status ${response.status}`)
+      throw createError(404, `Cannot fetch webmention data from ${webfingerURL}: http status ${response.status}`)
     }
 
     const { subject, links } = await response.json()
     if (subject !== `acct:${username}@${domain}`) {
-      throw new Error(`Webmention endpoint returned invalid subject for ${webfingerURL}`)
+      throw createError(404, `Webmention endpoint returned invalid subject for ${webfingerURL}`)
     }
 
     const actorLink = links.find((link: HostMetaLink) => link.rel === 'self')
     if (typeof actorLink?.href !== 'string' || actorLink.href.trim().length === 0) {
-      throw new Error(`Unable to find actor link from webmention at ${webfingerURL}`)
+      throw createError(404, `Unable to find actor link from webmention at ${webfingerURL}`)
     }
 
     return actorLink.href
@@ -323,14 +322,14 @@ export default class ActivityPubSystem {
 
     // TODO: handle array of string case and nested object
     if (typeof activityId !== 'string') {
-      throw new Error('Activities must contain an ID')
+      throw createError(400, 'Activities must contain an ID')
     }
 
     const activityActor = activity.actor
 
     // TODO: handle array of string case and nested object
     if (typeof activityActor !== 'string') {
-      throw new Error('Activities must contain an actor string')
+      throw createError(400, 'Activities must contain an actor string')
     }
 
     const mention = await this.actorToMention(activityActor, fromActor)

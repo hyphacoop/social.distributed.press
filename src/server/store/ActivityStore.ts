@@ -1,5 +1,6 @@
 import { AbstractLevel } from 'abstract-level'
 import { APActivity } from 'activitypub-types'
+import createError from 'http-errors'
 
 export class ActivityStore {
   db: AbstractLevel<any, string, any>
@@ -15,7 +16,7 @@ export class ActivityStore {
 
   async add (activity: APActivity): Promise<void> {
     if (activity.id === undefined) {
-      throw new Error('Activity ID is missing.')
+      throw createError(400, 'Activity ID is missing.')
     }
     const key = this.urlToKey(activity.id)
     await this.db.put(key, activity)
@@ -32,7 +33,7 @@ export class ActivityStore {
       const activity: APActivity = await this.db.get(key)
       return activity
     } catch (error) {
-      throw new Error(`Activity not found for URL: ${url}`)
+      throw createError(404, `Activity not found for URL: ${url}`)
     }
   }
 
