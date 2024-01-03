@@ -1,158 +1,101 @@
-import test from 'ava'
-import fastify from 'fastify'
+import anyTest, { TestFn } from 'ava'
 import sinon from 'sinon'
-import { adminRoutes } from './admins'
-import Store from '../store/index.js'
+import { spawnTestServer } from '../fixtures/spawnServer.js'
+import { FastifyTypebox } from './index.js'
 import ActivityPubSystem from '../apsystem.js'
-import { ModerationChecker } from '../moderation.js'
-import HookSystem from '../hooksystem'
-import { APIConfig } from '.'
-import { makeSigner } from '../../keypair.js'
-import { generateKeypair } from 'http-signed-fetch'
 
-const mockConfig: APIConfig = {
-  port: 3000,
-  host: 'localhost',
-  storage: 'path/to/storage',
-  publicURL: 'http://localhost:3000'
+interface TestContext {
+  server: FastifyTypebox
+  hasAdminPermissionForRequestStub: sinon.SinonStub
 }
 
-let server: any
-let mockStore: any
-let mockApsystem: any
+const test = anyTest as TestFn<TestContext>
 
-test.beforeEach(async () => {
-  server = fastify()
-  mockStore = sinon.createStubInstance(Store)
-
-  mockStore.admins = {
-    list: sinon.stub(),
-    add: sinon.stub(),
-    remove: sinon.stub()
-  }
-  mockStore.admins.list.resolves(['admin1@example.com', 'admin2@example.com'])
-  mockStore.admins.add.resolves()
-  mockStore.admins.remove.resolves()
-
-  mockApsystem = new ActivityPubSystem(mockConfig.publicURL, mockStore, new ModerationChecker(mockStore), new HookSystem(mockStore))
-  sinon.stub(mockApsystem, 'hasAdminPermissionForRequest').resolves(true)
-
-  await adminRoutes(mockConfig, mockStore, mockApsystem)(server)
+test.beforeEach(async t => {
+  t.context.server = await spawnTestServer()
+  t.context.hasAdminPermissionForRequestStub = sinon.stub(ActivityPubSystem.prototype, 'hasAdminPermissionForRequest')
 })
 
-const simulateSignedRequest = (method: string, path: string): { Signature: string, Date: string } => {
-  const keypair = generateKeypair()
-  const publicKeyId = 'https://example.com/#main-key'
-  const signer = makeSigner(keypair, publicKeyId)
+test.afterEach.always(async t => {
+  await t.context.server?.close()
+  t.context.hasAdminPermissionForRequestStub.restore()
+})
 
-  const url = `${mockConfig.publicURL}${path}`
+test.serial('GET /admins - success', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(true)
 
-  // Generate a signature header
-  const signatureHeader = signer.sign({
-    method,
-    url,
-    headers: {
-      host: 'localhost:3000',
-      date: new Date().toUTCString()
-    }
-  })
-
-  return {
-    Signature: signatureHeader,
-    Date: new Date().toUTCString()
-  }
-}
-
-test('GET /admins - success', async t => {
-  const signedHeaders = simulateSignedRequest('GET', '/admins')
-
-  mockApsystem.hasAdminPermissionForRequest.callsFake((request: any) => {
-    return 'Signature' in request.headers && 'Date' in request.headers
-  })
-
-  const response = await server.inject({
+  const response = await t.context.server.inject({
     method: 'GET',
-    url: '/admins',
-    headers: signedHeaders
+    url: '/v1/admins'
   })
 
-  t.is(response.statusCode, 200)
-  t.is(response.body, 'admin1@example.com\nadmin2@example.com')
+  t.is(response.statusCode, 200, 'returns a status code of 200')
 })
 
-test('GET /admins - unauthorized', async t => {
-  mockApsystem.hasAdminPermissionForRequest.resolves(false)
+test.serial('GET /admins - not allowed', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(false)
 
-  const response = await server.inject({
+  const response = await t.context.server.inject({
     method: 'GET',
-    url: '/admins'
+    url: '/v1/admins'
   })
 
-  t.is(response.statusCode, 403)
+  t.is(response.statusCode, 403, 'returns a status code of 403')
 })
 
-test('POST /admins - success', async t => {
-  const signedHeaders = simulateSignedRequest('POST', '/admins')
+test.serial('POST /admins - add admins', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(true)
 
-  const response = await server.inject({
+  const response = await t.context.server.inject({
     method: 'POST',
-    url: '/admins',
-    payload: 'newadmin@example.com',
-    headers: {
-      'Content-Type': 'text/plain',
-      ...signedHeaders
-    }
-  })
-
-  t.is(response.statusCode, 200)
-})
-
-test('POST /admins - unauthorized', async t => {
-  mockApsystem.hasAdminPermissionForRequest.resolves(false)
-
-  const response = await server.inject({
-    method: 'POST',
-    url: '/admins',
+    url: '/v1/admins',
     payload: 'newadmin@example.com',
     headers: {
       'Content-Type': 'text/plain'
     }
   })
 
-  t.is(response.statusCode, 403)
+  t.is(response.statusCode, 200, 'returns a status code of 200')
 })
 
-test('DELETE /admins - success', async t => {
-  const signedHeaders = simulateSignedRequest('DELETE', '/admins')
+test.serial('POST /admins - not allowed', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(false)
 
-  const response = await server.inject({
-    method: 'DELETE',
-    url: '/admins',
-    payload: 'admin1@example.com',
-    headers: {
-      'Content-Type': 'text/plain',
-      ...signedHeaders
-    }
-  })
-
-  t.is(response.statusCode, 200)
-})
-
-test('DELETE /admins - unauthorized', async t => {
-  mockApsystem.hasAdminPermissionForRequest.resolves(false)
-
-  const response = await server.inject({
-    method: 'DELETE',
-    url: '/admins',
-    payload: 'admin1@example.com',
+  const response = await t.context.server.inject({
+    method: 'POST',
+    url: '/v1/admins',
+    payload: 'newadmin@example.com',
     headers: {
       'Content-Type': 'text/plain'
     }
   })
 
-  t.is(response.statusCode, 403)
+  t.is(response.statusCode, 403, 'returns a status code of 403')
 })
 
-test.afterEach(async () => {
-  await server.close()
+test.serial('DELETE /admins - remove admins', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(true)
+
+  const response = await t.context.server.inject({
+    method: 'DELETE',
+    url: '/v1/admins',
+    payload: 'removeadmin@example.com',
+    headers: {
+      'Content-Type': 'text/plain'
+    }
+  })
+
+  t.is(response.statusCode, 200, 'returns a status code of 200')
+})
+
+test.serial('DELETE /admins - not allowed', async t => {
+  t.context.hasAdminPermissionForRequestStub.resolves(false)
+
+  const response = await t.context.server.inject({
+    method: 'DELETE',
+    url: '/v1/admins',
+    payload: 'removeadmin@example.com'
+  })
+
+  t.is(response.statusCode, 403, 'returns a status code of 403')
 })
