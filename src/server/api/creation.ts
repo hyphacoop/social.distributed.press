@@ -92,6 +92,6 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     }
 
     await store.forActor(actor).delete()
-    return await reply.send({ message: 'Data deleted successfully' })
+    return await reply.code(200).type('application/json').send(JSON.stringify({ message: 'Data deleted successfully' }))
   })
 }
