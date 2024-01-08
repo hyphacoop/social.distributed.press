@@ -34,6 +34,8 @@ const mockRequest = {
 // Initialize the main class to test
 const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks)
 
+// TODO: Add comprehensive tests for the ActivityPubSystem's interaction with the admin API routes.
+
 test.beforeEach(() => {
   // Restore stubs before setting them up again
   sinon.restore()

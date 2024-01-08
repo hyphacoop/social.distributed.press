@@ -1,15 +1,24 @@
 import { APActivity } from 'activitypub-types'
-
+import { fetch as signedFetch, generateKeypair } from 'http-signed-fetch'
 import { KeyPair } from '../keypair.js'
 import { ActorInfo } from '../schemas.js'
 
-export type FetchLike = typeof globalThis.fetch
+export type SignedFetchLike = (
+  url: RequestInfo,
+  init?: RequestInit & { publicKeyId: string, keypair: KeyPair }
+) => Promise<Response>
 
 export interface SocialInboxOptions {
   instance: string
   account: string
-  keypair: KeyPair
-  fetch?: FetchLike
+  keypair: ReturnType<typeof generateKeypair>
+  fetch?: SignedFetchLike
+}
+
+export interface Hook {
+  url: string
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  headers: { [name: string]: string }
 }
 
 const TYPE_TEXT = 'text/plain'
@@ -19,24 +28,25 @@ const TYPE_JSON = 'application/json'
 const GET = 'GET'
 const POST = 'POST'
 const DELETE = 'DELETE'
+const PUT = 'PUT'
 
 const NEWLINE = '\n'
 
-type VALID_METHODS = typeof GET | typeof POST | typeof DELETE
+type VALID_METHODS = typeof GET | typeof POST | typeof PUT | typeof DELETE
 
 type VALID_TYPES = typeof TYPE_TEXT | typeof TYPE_JSON | typeof TYPE_LDJSON | undefined
 
 export class SocialInboxClient {
   instance: string
   account: string
-  keypair: KeyPair
-  fetch: FetchLike
+  keypair: ReturnType<typeof generateKeypair>
+  fetch: SignedFetchLike
 
   constructor (options: SocialInboxOptions) {
     this.instance = options.instance
     this.account = options.account
     this.keypair = options.keypair
-    this.fetch = options.fetch ?? globalThis.fetch
+    this.fetch = options.fetch ?? signedFetch
   }
 
   async sendRequest (method: VALID_METHODS, path: string, contentType?: VALID_TYPES, data?: any): Promise<Response> {
@@ -49,13 +59,17 @@ export class SocialInboxClient {
 
     const finalContentType = contentType ?? TYPE_TEXT
 
-    // TODO: Signing
+    // Extract publicKeyId from this.keypair
+    const { publicKeyId, ...keypairWithoutId } = this.keypair
+
     const response = await this.fetch(url, {
       method,
       headers: {
         'Content-Type': finalContentType
       },
-      body
+      body,
+      keypair: keypairWithoutId,
+      publicKeyId
     })
 
     if (!response.ok) {
@@ -66,6 +80,7 @@ export class SocialInboxClient {
     return response
   }
 
+  // Actorinfo
   async setActorInfo (actor: string, info: ActorInfo): Promise<void> {
     await this.sendRequest(POST, `/${actor}/`, TYPE_JSON, info)
   }
@@ -91,15 +106,25 @@ export class SocialInboxClient {
     return await this.deleteActor(this.account)
   }
 
-  async sendActorInbox (actor: string, activity: APActivity): Promise<void> {
-    await this.sendRequest(POST, `/${actor}/inbox`, TYPE_LDJSON, activity)
+  // Admins
+  async listAdmins (): Promise<string[]> {
+    const response = await this.sendRequest(GET, '/admins')
+    const text = await response.text()
+    return text.split(NEWLINE)
   }
 
+  async addAdmins (admins: string[]): Promise<void> {
+    await this.sendRequest(POST, '/admins', TYPE_TEXT, admins.join(NEWLINE))
+  }
+
+  async removeAdmins (admins: string[]): Promise<void> {
+    await this.sendRequest(DELETE, '/admins', TYPE_TEXT, admins.join(NEWLINE))
+  }
+
+  // blocklist
   async getGlobalBlocklist (): Promise<string[]> {
     const response = await this.sendRequest(GET, '/blocklist')
-
     const text = await response.text()
-
     return text.split(NEWLINE)
   }
 
@@ -109,5 +134,73 @@ export class SocialInboxClient {
 
   async removeGlobalBlocklist (list: string[]): Promise<void> {
     await this.sendRequest(POST, '/blocklist', TYPE_TEXT, list.join(NEWLINE))
+  }
+
+  // Allowlist
+  async getGlobalAllowlist (): Promise<string[]> {
+    const response = await this.sendRequest(GET, '/allowlist')
+    const text = await response.text()
+    return text.split(NEWLINE)
+  }
+
+  async addGlobalAllowlist (accounts: string[]): Promise<void> {
+    await this.sendRequest(POST, '/allowlist', TYPE_TEXT, accounts.join(NEWLINE))
+  }
+
+  async removeGlobalAllowlist (accounts: string[]): Promise<void> {
+    await this.sendRequest(DELETE, '/allowlist', TYPE_TEXT, accounts.join(NEWLINE))
+  }
+
+  // Followers
+  async listFollowers (actor: string): Promise<string[]> {
+    const response = await this.sendRequest(GET, `/${actor}/followers`)
+    return await response.json()
+  }
+
+  async removeFollower (actor: string, follower: string): Promise<void> {
+    await this.sendRequest(DELETE, `/${actor}/followers/${encodeURIComponent(follower)}`)
+  }
+
+  // Hooks
+  async getHook (actor: string, hookType: string): Promise<any> {
+    const response = await this.sendRequest(GET, `/${actor}/hooks/${hookType}`)
+    return await response.json()
+  }
+
+  async setHook (actor: string, hookType: string, url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', headers: { [name: string]: string }): Promise<void> {
+    const hook = { url, method, headers }
+    await this.sendRequest(PUT, `/${actor}/hooks/${hookType}`, TYPE_JSON, hook)
+  }
+
+  async deleteHook (actor: string, hookType: string): Promise<void> {
+    await this.sendRequest(DELETE, `/${actor}/hooks/${hookType}`)
+  }
+
+  // Inbox
+  async fetchInbox (actor: string): Promise<any> {
+    const response = await this.sendRequest(GET, `/${actor}/inbox`)
+    return await response.json()
+  }
+
+  async postToInbox (actor: string, activity: APActivity): Promise<void> {
+    await this.sendRequest(POST, `/${actor}/inbox`, TYPE_LDJSON, activity)
+  }
+
+  async approveInboxItem (actor: string, itemId: string): Promise<void> {
+    await this.sendRequest(POST, `/${actor}/inbox/${itemId}`)
+  }
+
+  async rejectInboxItem (actor: string, itemId: string): Promise<void> {
+    await this.sendRequest(DELETE, `/${actor}/inbox/${itemId}`)
+  }
+
+  // Outbox
+  async postToOutbox (actor: string, activity: APActivity): Promise<void> {
+    await this.sendRequest(POST, `/${actor}/outbox`, TYPE_LDJSON, activity)
+  }
+
+  async fetchOutboxItem (itemId: string, actor: string = this.account): Promise<APActivity> {
+    const response = await this.sendRequest(GET, `/${actor}/outbox/${itemId}`)
+    return await response.json()
   }
 }

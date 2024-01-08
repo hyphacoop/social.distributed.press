@@ -63,6 +63,11 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor } = request.params
 
+    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    if (!allowed) {
+      return await reply.code(403).send('Not Allowed')
+    }
+
     const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
     const submittedActorURL = await apsystem.mentionToActor(submittedActorMention)
 
