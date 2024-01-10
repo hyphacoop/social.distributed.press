@@ -2,6 +2,7 @@ import { APActivity } from 'activitypub-types'
 import { fetch as signedFetch, generateKeypair } from 'http-signed-fetch'
 import { KeyPair } from '../keypair.js'
 import { ActorInfo } from '../schemas.js'
+import createError from 'http-errors'
 
 export type SignedFetchLike = (
   url: RequestInfo,
@@ -74,28 +75,28 @@ export class SocialInboxClient {
 
     if (!response.ok) {
       const message = `Could not send ${method} to ${url}, status ${response.status}:\n${await response.text()}`
-      throw new Error(message)
+      throw createError(response.status, message)
     }
 
     return response
   }
 
   // Actorinfo
-  async setActorInfo (actor: string, info: ActorInfo): Promise<void> {
+  async setActorInfo (info: ActorInfo, actor: string = this.account): Promise<void> {
     await this.sendRequest(POST, `/${actor}/`, TYPE_JSON, info)
   }
 
-  async getActorInfo (actor: string): Promise<ActorInfo> {
+  async getActorInfo (actor: string = this.account): Promise<ActorInfo> {
     const response = await this.sendRequest(GET, `/${actor}/`)
     return await response.json()
   }
 
-  async deleteActor (actor: string): Promise<void> {
+  async deleteActor (actor: string = this.account): Promise<void> {
     await this.sendRequest(DELETE, `/${actor}/`)
   }
 
   async setInfo (info: ActorInfo): Promise<void> {
-    return await this.setActorInfo(this.account, info)
+    return await this.setActorInfo(info, this.account)
   }
 
   async getInfo (): Promise<ActorInfo> {
@@ -152,50 +153,50 @@ export class SocialInboxClient {
   }
 
   // Followers
-  async listFollowers (actor: string): Promise<string[]> {
+  async listFollowers (actor: string = this.account): Promise<string[]> {
     const response = await this.sendRequest(GET, `/${actor}/followers`)
     return await response.json()
   }
 
-  async removeFollower (actor: string, follower: string): Promise<void> {
+  async removeFollower (follower: string, actor: string = this.account): Promise<void> {
     await this.sendRequest(DELETE, `/${actor}/followers/${encodeURIComponent(follower)}`)
   }
 
   // Hooks
-  async getHook (actor: string, hookType: string): Promise<any> {
+  async getHook (hookType: string, actor: string = this.account): Promise<any> {
     const response = await this.sendRequest(GET, `/${actor}/hooks/${hookType}`)
     return await response.json()
   }
 
-  async setHook (actor: string, hookType: string, url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', headers: { [name: string]: string }): Promise<void> {
+  async setHook (hookType: string, url: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE', headers: { [name: string]: string }, actor: string = this.account): Promise<void> {
     const hook = { url, method, headers }
     await this.sendRequest(PUT, `/${actor}/hooks/${hookType}`, TYPE_JSON, hook)
   }
 
-  async deleteHook (actor: string, hookType: string): Promise<void> {
+  async deleteHook (hookType: string, actor: string = this.account): Promise<void> {
     await this.sendRequest(DELETE, `/${actor}/hooks/${hookType}`)
   }
 
   // Inbox
-  async fetchInbox (actor: string): Promise<any> {
+  async fetchInbox (actor: string = this.account): Promise<any> {
     const response = await this.sendRequest(GET, `/${actor}/inbox`)
     return await response.json()
   }
 
-  async postToInbox (actor: string, activity: APActivity): Promise<void> {
+  async postToInbox (activity: APActivity, actor: string = this.account): Promise<void> {
     await this.sendRequest(POST, `/${actor}/inbox`, TYPE_LDJSON, activity)
   }
 
-  async approveInboxItem (actor: string, itemId: string): Promise<void> {
+  async approveInboxItem (itemId: string, actor: string = this.account): Promise<void> {
     await this.sendRequest(POST, `/${actor}/inbox/${itemId}`)
   }
 
-  async rejectInboxItem (actor: string, itemId: string): Promise<void> {
+  async rejectInboxItem (itemId: string, actor: string = this.account): Promise<void> {
     await this.sendRequest(DELETE, `/${actor}/inbox/${itemId}`)
   }
 
   // Outbox
-  async postToOutbox (actor: string, activity: APActivity): Promise<void> {
+  async postToOutbox (activity: APActivity, actor: string = this.account): Promise<void> {
     await this.sendRequest(POST, `/${actor}/outbox`, TYPE_LDJSON, activity)
   }
 

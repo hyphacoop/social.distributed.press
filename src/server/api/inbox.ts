@@ -4,6 +4,7 @@ import { Type } from '@sinclair/typebox'
 import type { APIConfig, FastifyTypebox } from '.'
 import Store from '../store'
 import type ActivityPubSystem from '../apsystem.js'
+import createError from 'http-errors'
 
 export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
@@ -78,11 +79,11 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     // TODO: Account for actor being array of strings or nested object
     if (typeof fromActorURL !== 'string') {
-      throw new Error('Must specify `actor` URL in activity')
+      throw createError(400, 'Must specify `actor` URL in activity')
     }
 
     if (fromActorURL !== submittedActorURL) {
-      throw new Error(`Submitted activity must be from signed actor. Activity: ${fromActorURL} Request: ${submittedActorURL}`)
+      throw createError(403, `Submitted activity must be from signed actor. Activity: ${fromActorURL} Request: ${submittedActorURL}`)
     }
     await apsystem.ingestActivity(actor, activity)
 
