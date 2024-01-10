@@ -59,6 +59,7 @@
     "fastify-plugin": "^4.4.0",
     "fs": "0.0.1-security",
     "get-port": "^6.1.2",
+    "http-errors": "^2.0.0",
     "http-signed-fetch": "^1.0.1",
     "is-valid-hostname": "^1.0.2",
     "level": "^8.0.0",
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@ava/typescript": "^3.0.1",
+    "@types/http-errors": "^2.0.4",
     "@types/node": "^18.11.13",
     "@types/sinon": "^10.0.16",
     "@types/yargs": "^17.0.17",

@@ -2,6 +2,7 @@ import { APActivity } from 'activitypub-types'
 import { fetch as signedFetch, generateKeypair } from 'http-signed-fetch'
 import { KeyPair } from '../keypair.js'
 import { ActorInfo } from '../schemas.js'
+import createError from 'http-errors'
 
 export type SignedFetchLike = (
   url: RequestInfo,
@@ -74,7 +75,7 @@ export class SocialInboxClient {
 
     if (!response.ok) {
       const message = `Could not send ${method} to ${url}, status ${response.status}:\n${await response.text()}`
-      throw new Error(message)
+      throw createError(response.status, message)
     }
 
     return response

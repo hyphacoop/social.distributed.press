@@ -2,6 +2,7 @@ import { AbstractLevel } from 'abstract-level'
 
 import { ActorStore } from './ActorStore.js'
 import { AccountListStore } from './AccountListStore.js'
+import createError from 'http-errors'
 
 export { ActorInfoSchema, ActorInfo } from '../../schemas.js'
 
@@ -41,7 +42,7 @@ export default class Store {
 
     const store = this.actorCache.get(domain)
     if (store == null) {
-      throw new Error('Domain store not initialixed')
+      throw createError(500, 'Domain store not initialized')
     }
     return store
   }

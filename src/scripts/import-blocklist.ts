@@ -4,6 +4,7 @@ import envPaths from 'env-paths'
 import { Level } from 'level'
 import { parse } from 'csv-parse'
 import { Readable } from 'node:stream'
+import createError from 'http-errors'
 
 import Store from '../server/store/index.js'
 
@@ -29,11 +30,11 @@ console.log(`Downloading blocklist:\n${list}`)
 const response = await fetch(list)
 
 if (!response.ok) {
-  throw new Error(await response.text())
+  throw createError(500, await response.text())
 }
 
 if (response.body == null) {
-  throw new Error(`No blocklist in response at ${list}`)
+  throw createError(500, `No blocklist in response at ${list}`)
 }
 
 console.log(`Parsing blocklist csv to add to store:\n${storage}`)
@@ -47,7 +48,7 @@ const parser = Readable.from(await response.text())
 for await (const record of parser) {
   const domain = record[DOMAIN_KEY]
   if (typeof domain !== 'string') {
-    throw new Error(`CSV file must follow the Mastodon blocklist format and contain rows with a ${DOMAIN_KEY} column`)
+    throw createError(400, `CSV file must follow the Mastodon blocklist format and contain rows with a ${DOMAIN_KEY} column`)
   }
   console.log('Adding', domain)
   await store.blocklist.add([`@*@${domain}`])
