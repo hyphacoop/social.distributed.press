@@ -30,12 +30,12 @@ test.beforeEach(async t => {
     },
     forActor: sinon.stub().callsFake((actor) => ({
       blocklist: {
-        list: sinon.stub(),
+        list: sinon.stub().resolves([]),
         add: sinon.stub().resolves(),
         remove: sinon.stub().resolves()
       },
       allowlist: {
-        list: sinon.stub(),
+        list: sinon.stub().resolves([]),
         add: sinon.stub().resolves(),
         remove: sinon.stub().resolves()
       }
@@ -56,21 +56,31 @@ test.afterEach.always(async t => {
   await t.context.server?.close()
   t.context.hasAdminPermissionForRequestStub.restore()
   t.context.hasPermissionActorRequestStub.restore()
+
+  // Reset the mock store for blocklist and allowlist
+  t.context.mockStore.blocklist.list.reset()
+  t.context.mockStore.allowlist.list.reset()
 })
 
 // Global Blocklist Tests
-// test.serial('GET /blocklist - success', async t => {
-//   const response = await t.context.server.inject({
-//     method: 'GET',
-//     url: '/v1/blocklist'
-//   })
+test.serial('GET /blocklist - success', async t => {
+  // Add a new account to blocklist
+  await t.context.server.inject({
+    method: 'POST',
+    url: '/v1/blocklist',
+    payload: 'blocked@example.com',
+    headers: { 'Content-Type': 'text/plain' }
+  })
 
-//   console.log(response.statusCode)
-//   console.log(response.body)
+  // Fetch the updated list of blocked accounts
+  const response = await t.context.server.inject({
+    method: 'GET',
+    url: '/v1/blocklist'
+  })
 
-//   t.is(response.statusCode, 200, 'returns a status code of 200')
-//   t.is(response.body, 'blocked@example.com', 'returns the blocklist')
-// })
+  t.is(response.statusCode, 200, 'returns a status code of 200')
+  t.is(response.body, 'blocked@example.com', 'returns the blocklist')
+})
 
 test.serial('POST /blocklist - success', async t => {
   const blocklistData = 'block@example.com'
@@ -99,18 +109,24 @@ test.serial('DELETE /blocklist - success', async t => {
 })
 
 // Global Allowlist Tests
-// test.serial('GET /allowlist - success', async t => {
-//   const response = await t.context.server.inject({
-//     method: 'GET',
-//     url: '/v1/allowlist'
-//   })
+test.serial('GET /allowlist - success', async t => {
+  // Add a new account to allowlist
+  await t.context.server.inject({
+    method: 'POST',
+    url: '/v1/allowlist',
+    payload: 'allowed@example.com',
+    headers: { 'Content-Type': 'text/plain' }
+  })
 
-//   console.log(response.statusCode)
-//   console.log(response.body)
+  // Fetch the updated list of allowed accounts
+  const response = await t.context.server.inject({
+    method: 'GET',
+    url: '/v1/allowlist'
+  })
 
-//   t.is(response.statusCode, 200, 'returns a status code of 200')
-//   t.is(response.body, 'allowed@example.com', 'returns the allowlist')
-// })
+  t.is(response.statusCode, 200, 'returns a status code of 200')
+  t.is(response.body, 'allowed@example.com', 'returns the allowlist')
+})
 
 test.serial('POST /allowlist - success', async t => {
   const allowlistData = 'allow@example.com'
@@ -218,11 +234,12 @@ test.serial('DELETE /v1/allowlist - not allowed', async t => {
   t.is(response.statusCode, 403, 'returns a status code of 403')
 })
 
-// Actor-specific Blocklist Tests
+// Actor-specific Blocklist Test
 // test.serial('GET /:actor/blocklist - success', async t => {
 //   const actor = 'testActor'
 //   const blockedAccounts = ['user1@example.com', 'user2@example.com']
 
+//   // Ensure the mockStore returns the blocked accounts
 //   t.context.mockStore.forActor(actor).blocklist.list.resolves(blockedAccounts)
 
 //   const response = await t.context.server.inject({
@@ -230,8 +247,7 @@ test.serial('DELETE /v1/allowlist - not allowed', async t => {
 //     url: `/v1/${actor}/blocklist`
 //   })
 
-//   console.log(response.statusCode)
-//   console.log(response.body)
+//   console.log(response.statusCode, response.body)
 
 //   t.is(response.statusCode, 200, 'returns a status code of 200')
 //   t.deepEqual(response.body.split('\n'), blockedAccounts, 'returns the correct blocklist')
@@ -270,6 +286,7 @@ test.serial('DELETE /:actor/blocklist - success', async t => {
 //   const actor = 'testActor'
 //   const allowedAccounts = ['user5@example.com', 'user6@example.com']
 
+//   // Ensure the mockStore returns the allowed accounts
 //   t.context.mockStore.forActor(actor).allowlist.list.resolves(allowedAccounts)
 
 //   const response = await t.context.server.inject({
@@ -277,8 +294,7 @@ test.serial('DELETE /:actor/blocklist - success', async t => {
 //     url: `/v1/${actor}/allowlist`
 //   })
 
-//   console.log(response.statusCode)
-//   console.log(response.body)
+//   console.log(response.statusCode, response.body)
 
 //   t.is(response.statusCode, 200, 'returns a status code of 200')
 //   t.deepEqual(response.body.split('\n'), allowedAccounts, 'returns the correct allowlist')
