@@ -1,8 +1,21 @@
 import { APIConfig, FastifyTypebox } from '.'
 import { Type } from '@sinclair/typebox'
 
+import createError from 'http-errors'
+
 import Store from '../store/index.js'
 import ActivityPubSystem from '../apsystem.js'
+
+export function validateBlocklistFormat (mention: string): void {
+  const sections = mention.split('@')
+  const correctSections = sections.length === 3
+  const startsEmpty = sections[0] === ''
+  const hasUserAndDomain = (sections[1] !== '') && (sections[2] !== '')
+  const isValid = correctSections && hasUserAndDomain && startsEmpty
+  if (!isValid) {
+    throw createError(400, `Invalid account format: ${mention}. Please use the syntax @username@domain`)
+  }
+}
 
 export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Get global list of blocked users/instances as newline delimited string
@@ -45,7 +58,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.blocklist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
@@ -70,7 +84,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.blocklist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
@@ -115,7 +130,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.allowlist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
@@ -140,7 +156,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.allowlist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
@@ -200,7 +217,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.forActor(actor).blocklist.add(accounts)
     return await reply.send('Added successfully')
   })
@@ -232,7 +250,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.forActor(actor).blocklist.remove(accounts)
     return await reply.send('Removed successfully')
   })
@@ -292,7 +311,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.forActor(actor).allowlist.add(accounts)
     return await reply.send({ message: 'Added successfully' })
   })
@@ -324,7 +344,8 @@ export const blockAllowListRoutes = (cfg: APIConfig, store: Store, apsystem: Act
       return await reply.code(403).send('Not Allowed')
     }
 
-    const accounts = request.body.split('\n')
+    const accounts = request.body.trim().split('\n')
+    accounts.map(validateBlocklistFormat)
     await store.forActor(actor).allowlist.remove(accounts)
     return await reply.send({ message: 'Removed successfully' })
   })
