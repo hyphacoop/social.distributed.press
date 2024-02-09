@@ -13,7 +13,7 @@ export function validateBlocklistFormat (mention: string): void {
   const hasUserAndDomain = (sections[1] !== '') && (sections[2] !== '')
   const isValid = correctSections && hasUserAndDomain && startsEmpty
   if (!isValid) {
-    throw createError(400, `Invalid account format: ${mention}. Please use the syntax @usernam@domain`)
+    throw createError(400, `Invalid account format: ${mention}. Please use the syntax @username@domain`)
   }
 }
 
