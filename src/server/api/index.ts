@@ -27,6 +27,8 @@ import { blockAllowListRoutes } from './blockallowlist.js'
 import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
+import { generateKeypair } from 'http-signed-fetch'
+import { announcementsRoutes } from './announcements.js'
 
 export const paths = envPaths('distributed-press')
 
@@ -94,6 +96,23 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     return 'ok\n'
   })
 
+  // Setup announcements actor
+  let keys
+  try {
+    const prev = await store.announcements.getInfo()
+    keys = { ...prev.keypair, publicKeyId: prev.publicKeyId }
+  } catch {
+    keys = generateKeypair()
+  }
+  await store.announcements.setInfo({
+    actorUrl: `${cfg.publicURL}/v1/announcements`,
+    publicKeyId: keys.publicKeyId,
+    keypair: {
+      privateKeyPem: keys.privateKeyPem,
+      publicKeyPem: keys.publicKeyPem
+    }
+  })
+
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
 
   await server.ready()
@@ -123,6 +142,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
     })
   }
 
+  await server.register(announcementsRoutes(cfg, store, apsystem))
   await server.register(creationRoutes(cfg, store, apsystem))
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(outboxRoutes(cfg, store, apsystem))

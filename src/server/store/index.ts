@@ -10,6 +10,7 @@ export default class Store {
   db: AbstractLevel<any, string, any>
   actorCache: Map<string, ActorStore>
   actorsDb: AbstractLevel<any, string, any>
+  announcements: ActorStore
   blocklist: AccountListStore
   allowlist: AccountListStore
   admins: AccountListStore
@@ -19,6 +20,8 @@ export default class Store {
     this.db = db
     this.actorCache = new Map()
     this.actorsDb = this.db.sublevel('actorCache', { valueEncoding: 'json' })
+    const announcementsDb = this.db.sublevel('announcements', { valueEncoding: 'json' })
+    this.announcements = new ActorStore(announcementsDb)
     const blocklistDb = this.db.sublevel('blocklist', {
       valueEncoding: 'json'
     })
