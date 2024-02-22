@@ -110,7 +110,8 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     keypair: {
       privateKeyPem: keys.privateKeyPem,
       publicKeyPem: keys.publicKeyPem
-    }
+    },
+    announce: false
   })
 
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })

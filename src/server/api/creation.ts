@@ -3,6 +3,7 @@ import { Type } from '@sinclair/typebox'
 import type { APIConfig, FastifyTypebox } from './index.js'
 import Store, { ActorInfo, ActorInfoSchema } from '../store/index.js'
 import ActivityPubSystem from '../apsystem.js'
+import { nanoid } from 'nanoid'
 
 export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
@@ -35,6 +36,24 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
 
     const info = request.body
     await store.forActor(actor).setInfo(info)
+
+    if (info.announce) {
+      const activity = {
+        '@context': 'https://www.w3.org/ns/activitystreams',
+        type: 'Note',
+        id: `${info.actorUrl}/outbox/${nanoid()}`,
+        actor: info.actorUrl,
+        attributedTo: info.actorUrl,
+        published: new Date().toUTCString(),
+        to: ['https://www.w3.org/ns/activitystreams#Public'],
+        cc: ['https://social.distributed.press/v1/announcements/followers'],
+        // TODO: add a template in config
+        content: `a wild site appears! ${actor}`
+      }
+      await store.announcements.outbox.add(activity)
+      await apsystem.notifyFollowers(actor, activity)
+    }
+
     return await reply.send(info)
   })
 
