@@ -28,7 +28,6 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    // return await reply.send({ prueba: 'asdfasd' })
     const actor = await store.announcements.getInfo()
 
     return await reply.send({
