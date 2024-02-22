@@ -8,36 +8,31 @@ import { nanoid } from 'nanoid'
 
 const paths = envPaths('social.distributed.press')
 
-const argv = yargs(hideBin(process.argv)).positional('content', {}).options({
-  storage: { type: 'string' }
-}).parseSync()
+const argv = yargs(hideBin(process.argv))
+  .command('<content>', 'content for the post')
+  .demandCommand(1)
+  .options({
+    storage: { type: 'string' }
+  }).parseSync()
 
 const storage = argv.storage ?? paths.data
-const content = argv.$0
+const content = `${argv._[0]}`
 
 const db = new Level(storage, { valueEncoding: 'json' })
 
 const store = new Store(db)
 
 console.log(`Posting: ${content}`)
-const actor=await store.announcements.getInfo()
+const actor = await store.announcements.getInfo()
 
 await store.announcements.outbox.add({
-    '@context': 'https://www.w3.org/ns/activitystreams',
-    type: 'Note',
-    id: `${actor.actorUrl}/outbox/${nanoid()}`,
-    actor: actor.actorUrl,
-      attributedTo: actor.actorUrl,
-      published: new Date().toUTCString(),
-  "to": ["https://www.w3.org/ns/activitystreams#Public"],
-  "cc": ["https://social.distributed.press/v1/@sutty@sutty.nl/followers"],
-    object: {
-
-    }
+  '@context': 'https://www.w3.org/ns/activitystreams',
+  type: 'Note',
+  id: `${actor.actorUrl}/outbox/${nanoid()}`,
+  actor: actor.actorUrl,
+  attributedTo: actor.actorUrl,
+  published: new Date().toUTCString(),
+  to: ['https://www.w3.org/ns/activitystreams#Public'],
+  cc: ['https://social.distributed.press/v1/announcements/followers'],
+  content
 })
-await store.admins.add(list)
-
-const final = await store.admins.list()
-
-console.log('Final admin list:')
-console.log(final)
