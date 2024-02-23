@@ -87,7 +87,7 @@ export class SocialInboxClient {
 
   // Actorinfo
   async setActorInfo (info: ActorInfo, actor: string = this.account): Promise<void> {
-    await this.sendRequest(POST, `/${actor}/`, TYPE_JSON, info)
+    await this.sendRequest(POST, `/${actor}`, TYPE_JSON, info)
   }
 
   async getActorInfo (actor: string = this.account): Promise<ActorInfo> {
