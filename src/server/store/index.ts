@@ -37,6 +37,10 @@ export default class Store {
   }
 
   forActor (domain: string): ActorStore {
+    if (domain === 'announcements') {
+      return this.announcements
+    }
+
     if (!this.actorCache.has(domain)) {
       const sub = this.db.sublevel(domain, { valueEncoding: 'json' })
       const store = new ActorStore(sub)
