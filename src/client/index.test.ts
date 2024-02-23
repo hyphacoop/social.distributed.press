@@ -33,7 +33,7 @@ test('Local Server Communication', async t => {
   const client = new SocialInboxClient({
     instance: `http://localhost:${port}`,
     account: 'testAccount',
-    keypair: generateKeypair(),
+    keypair: { ...generateKeypair(), publicKeyId: 'testAccount#main-key' },
     fetch: globalThis.fetch
   })
 
