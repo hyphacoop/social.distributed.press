@@ -44,6 +44,17 @@ test('AccountListStore - list patterns', async t => {
   t.deepEqual(accounts, ['@user2@example.com'], 'Only @user2@example.com should remain after removal of @user1@example.com')
 })
 
+test("AccountListStore - adding doesn't replace existing", async t => {
+  const store = newAccountListStore()
+  const patterns = ['@user1@example.com', '@user2@example.com']
+  const otherPatterns = ['@user3@example.com', '@user4@example.com']
+  await store.add(patterns)
+  await store.add(otherPatterns)
+
+  const accounts = await store.list()
+  t.deepEqual(accounts.sort(), patterns.concat(otherPatterns).sort(), 'All patterns should be listed after addition')
+})
+
 test('AccountListStore - match all wildcard', async t => {
   const store = newAccountListStore()
   const patterns = ['@*@*']

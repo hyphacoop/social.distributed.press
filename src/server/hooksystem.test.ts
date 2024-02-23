@@ -1,7 +1,7 @@
 import test from 'ava'
 import HookSystem from './hooksystem'
 
-test('HookSystem triggers ModerationQueued with expected parameters', async (t) => {
+test('HookSystem triggers moderationqueued with expected parameters', async (t) => {
   // Mock the fetch API
   const mockFetch: any = (url: string, options: any) => {
     t.is(url, 'https://example.com/hook')
@@ -19,7 +19,7 @@ test('HookSystem triggers ModerationQueued with expected parameters', async (t) 
       return {
         hooks: {
           get: async (hookType: string) => {
-            if (hookType === 'ModerationQueued') {
+            if (hookType === 'moderationqueued') {
               return {
                 url: 'https://example.com/hook',
                 method: 'POST',
@@ -44,7 +44,7 @@ test('HookSystem triggers ModerationQueued with expected parameters', async (t) 
   t.true(result, 'Hook should be triggered successfully')
 })
 
-test('HookSystem triggers OnApproved with expected parameters', async (t) => {
+test('HookSystem triggers onapproved with expected parameters', async (t) => {
   // Mock the fetch API
   const mockFetch: any = (url: string, options: any) => {
     t.is(url, 'https://example.com/hook-approved')
@@ -62,7 +62,7 @@ test('HookSystem triggers OnApproved with expected parameters', async (t) => {
       return {
         hooks: {
           get: async (hookType: string) => {
-            if (hookType === 'OnApproved') {
+            if (hookType === 'onapproved') {
               return {
                 url: 'https://example.com/hook-approved',
                 method: 'POST',
@@ -84,10 +84,10 @@ test('HookSystem triggers OnApproved with expected parameters', async (t) => {
     type: 'TestApproved'
   })
 
-  t.true(result, 'Hook should be triggered successfully for OnApproved')
+  t.true(result, 'Hook should be triggered successfully for onapproved')
 })
 
-test('HookSystem triggers OnRejected with expected parameters', async (t) => {
+test('HookSystem triggers onrejected with expected parameters', async (t) => {
   // Mock the fetch API
   const mockFetch: any = (url: string, options: any) => {
     t.is(url, 'https://example.com/hook-rejected')
@@ -105,7 +105,7 @@ test('HookSystem triggers OnRejected with expected parameters', async (t) => {
       return {
         hooks: {
           get: async (hookType: string) => {
-            if (hookType === 'OnRejected') {
+            if (hookType === 'onrejected') {
               return {
                 url: 'https://example.com/hook-rejected',
                 method: 'POST',
@@ -127,5 +127,5 @@ test('HookSystem triggers OnRejected with expected parameters', async (t) => {
     type: 'TestRejected'
   })
 
-  t.true(result, 'Hook should be triggered successfully for OnRejected')
+  t.true(result, 'Hook should be triggered successfully for onrejected')
 })

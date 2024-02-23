@@ -49,15 +49,15 @@ export default class HookSystem {
   }
 
   async dispatchModerationQueued (actor: string, activity: APActivity): Promise<boolean> {
-    return await this.dispatchHook('ModerationQueued', actor, activity)
+    return await this.dispatchHook('moderationqueued', actor, activity)
   }
 
   async dispatchOnApproved (actor: string, activity: APActivity): Promise<boolean> {
-    return await this.dispatchHook('OnApproved', actor, activity)
+    return await this.dispatchHook('onapproved', actor, activity)
   }
 
   async dispatchOnRejected (actor: string, activity: APActivity): Promise<boolean> {
-    return await this.dispatchHook('OnRejected', actor, activity)
+    return await this.dispatchHook('onrejected', actor, activity)
   }
 
   private async dispatchHook (hookType: string, actor: string, activity: APActivity): Promise<boolean> {
