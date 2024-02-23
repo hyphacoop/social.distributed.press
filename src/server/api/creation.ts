@@ -29,6 +29,8 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
   }, async (request, reply) => {
     const { actor } = request.params
 
+    const existedAlready = (await store.actorsDb.keys().all()).some(k => k === actor)
+
     const allowed = await apsystem.hasPermissionActorRequest(actor, request, false)
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
@@ -37,7 +39,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     const info = request.body
     await store.forActor(actor).setInfo(info)
 
-    if (info.announce) {
+    if (!existedAlready && info.announce) {
       const activity = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
