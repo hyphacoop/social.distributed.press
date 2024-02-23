@@ -16,7 +16,7 @@ import { Level } from 'level'
 import { MemoryLevel } from 'memory-level'
 
 import Store from '../store/index.js'
-import ActivityPubSystem from '../apsystem.js'
+import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from '../apsystem.js'
 import HookSystem from '../hooksystem.js'
 import { ModerationChecker } from '../moderation.js'
 
@@ -97,15 +97,16 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   })
 
   // Setup announcements actor
+  const actorUrl = `${cfg.publicURL}/v1/announcements`
   let keys
   try {
     const prev = await store.announcements.getInfo()
     keys = { ...prev.keypair, publicKeyId: prev.publicKeyId }
   } catch {
-    keys = generateKeypair()
+    keys = { ...generateKeypair(), publicKeyId: `${actorUrl}#${DEFAULT_PUBLIC_KEY_FIELD}` }
   }
   await store.announcements.setInfo({
-    actorUrl: `${cfg.publicURL}/v1/announcements`,
+    actorUrl,
     publicKeyId: keys.publicKeyId,
     keypair: {
       privateKeyPem: keys.privateKeyPem,

@@ -9,10 +9,14 @@ export type SignedFetchLike = (
   init?: RequestInit & { publicKeyId: string, keypair: KeyPair }
 ) => Promise<Response>
 
+type Keypair = ReturnType<typeof generateKeypair> & {
+  publicKeyId: string
+}
+
 export interface SocialInboxOptions {
   instance: string
   account: string
-  keypair: ReturnType<typeof generateKeypair>
+  keypair: Keypair
   fetch?: SignedFetchLike
 }
 
@@ -40,7 +44,7 @@ type VALID_TYPES = typeof TYPE_TEXT | typeof TYPE_JSON | typeof TYPE_LDJSON | un
 export class SocialInboxClient {
   instance: string
   account: string
-  keypair: ReturnType<typeof generateKeypair>
+  keypair: Keypair
   fetch: SignedFetchLike
 
   constructor (options: SocialInboxOptions) {

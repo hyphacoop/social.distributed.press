@@ -4,6 +4,5 @@ declare module 'http-signed-fetch' {
   export function generateKeypair (): {
     publicKeyPem: string
     privateKeyPem: string
-    publicKeyId: string
   }
 }
