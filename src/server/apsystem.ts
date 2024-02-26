@@ -326,6 +326,7 @@ export default class ActivityPubSystem {
     }
 
     const activityActor = activity.actor
+    const activityType = activity.type
 
     // TODO: handle array of string case and nested object
     if (typeof activityActor !== 'string') {
@@ -343,7 +344,7 @@ export default class ActivityPubSystem {
     if (moderationState === BLOCKED) {
     // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
-    } else if (moderationState === ALLOWED) {
+    } else if ((activityType === 'Undo') || (moderationState === ALLOWED)) {
       await this.approveActivity(fromActor, activityId)
     } else {
       await this.hookSystem.dispatchModerationQueued(fromActor, activity)
