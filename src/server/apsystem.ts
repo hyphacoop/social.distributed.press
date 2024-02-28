@@ -341,10 +341,12 @@ export default class ActivityPubSystem {
 
     await actorStore.inbox.add(activity)
 
-    if (moderationState === BLOCKED) {
+    if (activityType === 'Undo') {
+      await this.performUndo(fromActor, activity)
+    } else if (moderationState === BLOCKED) {
     // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
-    } else if ((activityType === 'Undo') || (moderationState === ALLOWED)) {
+    } else if (moderationState === ALLOWED) {
       await this.approveActivity(fromActor, activityId)
     } else {
       await this.hookSystem.dispatchModerationQueued(fromActor, activity)
