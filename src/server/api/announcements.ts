@@ -16,7 +16,7 @@ type APActorNonStandard = APActor & {
 export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   server.get<{
     Reply: APActorNonStandard
-  }>('/announcements', {
+  }>('/announcements/', {
     schema: {
       params: {},
       // XXX: even with Type.Any(), the endpoint returns `{}` :/
