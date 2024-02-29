@@ -362,10 +362,10 @@ export default class ActivityPubSystem {
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
       await this.acceptFollow(fromActor, activity)
+      await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
       await this.performUndo(fromActor, activity)
     }
-    await this.hookSystem.dispatchOnApproved(fromActor, activity)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
@@ -409,6 +409,7 @@ export default class ActivityPubSystem {
       throw createError(400, 'Undo can only point to activities by same author')
     }
     await inbox.remove(object)
+    await this.hookSystem.dispatchOnApproved(fromActor, activity)
 
     // Detect if follow
     if (existing.type === 'Follow') {
