@@ -96,24 +96,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     return 'ok\n'
   })
 
-  // Setup announcements actor
-  const actorUrl = `${cfg.publicURL}/v1/announcements`
-  let keys
-  try {
-    const prev = await store.announcements.getInfo()
-    keys = { ...prev.keypair, publicKeyId: prev.publicKeyId }
-  } catch {
-    keys = { ...generateKeypair(), publicKeyId: `${actorUrl}#${DEFAULT_PUBLIC_KEY_FIELD}` }
-  }
-  await store.announcements.setInfo({
-    actorUrl,
-    publicKeyId: keys.publicKeyId,
-    keypair: {
-      privateKeyPem: keys.privateKeyPem,
-      publicKeyPem: keys.publicKeyPem
-    },
-    announce: false
-  })
+  await apsystem.announcements.init()
 
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
 

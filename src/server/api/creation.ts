@@ -29,8 +29,6 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
   }, async (request, reply) => {
     const { actor } = request.params
 
-    const existedAlready = (await store.actorsDb.keys().all()).some(k => k === actor)
-
     const allowed = await apsystem.hasPermissionActorRequest(actor, request, false)
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
@@ -38,23 +36,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
 
     const info = request.body
     await store.forActor(actor).setInfo(info)
-
-    if (!existedAlready && info.announce) {
-      const activity = {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'Note',
-        id: `${info.actorUrl}/outbox/${nanoid()}`,
-        actor: info.actorUrl,
-        attributedTo: info.actorUrl,
-        published: new Date().toUTCString(),
-        to: ['https://www.w3.org/ns/activitystreams#Public'],
-        cc: ['https://social.distributed.press/v1/announcements/followers'],
-        // TODO: add a template in config
-        content: `a wild site appears! ${actor}`
-      }
-      await store.announcements.outbox.add(activity)
-      await apsystem.notifyFollowers(actor, activity)
-    }
+    await apsystem.announcements.announce(actor, info)
 
     return await reply.send(info)
   })

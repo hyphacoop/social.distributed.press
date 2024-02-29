@@ -15,6 +15,7 @@ import {
 
 import type Store from './store/index.js'
 import { makeSigner } from '../keypair.js'
+import { Announcements } from './announcements.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
 
@@ -45,6 +46,7 @@ export default class ActivityPubSystem {
   modCheck: ModerationChecker
   fetch: FetchLike
   hookSystem: HookSystem
+  announcements: Announcements
 
   constructor (
     publicURL: string,
@@ -58,6 +60,7 @@ export default class ActivityPubSystem {
     this.modCheck = modCheck
     this.fetch = fetch
     this.hookSystem = hookSystem
+    this.announcements = new Announcements(this, publicURL)
   }
 
   makeURL (path: string): string {
