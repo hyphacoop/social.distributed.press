@@ -16,7 +16,7 @@ import { Level } from 'level'
 import { MemoryLevel } from 'memory-level'
 
 import Store from '../store/index.js'
-import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from '../apsystem.js'
+import ActivityPubSystem from '../apsystem.js'
 import HookSystem from '../hooksystem.js'
 import { ModerationChecker } from '../moderation.js'
 
@@ -27,7 +27,6 @@ import { blockAllowListRoutes } from './blockallowlist.js'
 import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
-import { generateKeypair } from 'http-signed-fetch'
 import { announcementsRoutes } from './announcements.js'
 
 export const paths = envPaths('distributed-press')

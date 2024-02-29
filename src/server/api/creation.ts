@@ -3,7 +3,6 @@ import { Type } from '@sinclair/typebox'
 import type { APIConfig, FastifyTypebox } from './index.js'
 import Store, { ActorInfo, ActorInfoSchema } from '../store/index.js'
 import ActivityPubSystem from '../apsystem.js'
-import { nanoid } from 'nanoid'
 
 export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Create a new inbox
