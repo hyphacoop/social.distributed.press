@@ -42,7 +42,6 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       inbox: `${actor.actorUrl}/inbox`,
       outbox: `${actor.actorUrl}/outbox`,
       publicKey: {
-        // TODO: copied from Mastodon
         id: `${actor.actorUrl}#main-key`,
 
         owner: actor.actorUrl,
