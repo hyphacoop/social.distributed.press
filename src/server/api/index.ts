@@ -28,6 +28,7 @@ import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
 import { announcementsRoutes } from './announcements.js'
+import { wellKnownRoutes } from './wellKnown.js'
 
 export const paths = envPaths('distributed-press')
 
@@ -98,6 +99,7 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   await apsystem.announcements.init()
 
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
+  await server.register(wellKnownRoutes(cfg, store, apsystem))
 
   await server.ready()
 
