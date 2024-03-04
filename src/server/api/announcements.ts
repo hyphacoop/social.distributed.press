@@ -39,8 +39,8 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
       type: 'Service',
       name: 'Announcements',
-      inbox: `${actor.actorUrl}/inbox`,
-      outbox: `${actor.actorUrl}/outbox`,
+      inbox: `${actor.actorUrl}inbox`,
+      outbox: `${actor.actorUrl}outbox`,
       publicKey: {
         id: `${actor.actorUrl}#main-key`,
 
@@ -74,7 +74,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       .map(a => a.id)
     return await reply.send({
       '@context': 'https://www.w3.org/ns/activitystreams',
-      id: `${actor.actorUrl}/outbox`,
+      id: `${actor.actorUrl}outbox`,
       type: 'OrderedCollection',
       totalItems: orderedItems.length,
       orderedItems
@@ -102,7 +102,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
     }
   }, async (request, reply) => {
     const actor = await store.announcements.getInfo()
-    const activity = await store.announcements.outbox.get(`${actor.actorUrl}/outbox/${request.params.id}`)
+    const activity = await store.announcements.outbox.get(`${actor.actorUrl}outbox/${request.params.id}`)
     return await reply.send(activity)
   })
 }

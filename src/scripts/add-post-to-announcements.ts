@@ -28,7 +28,7 @@ const actor = await store.announcements.getInfo()
 await store.announcements.outbox.add({
   '@context': 'https://www.w3.org/ns/activitystreams',
   type: 'Note',
-  id: `${actor.actorUrl}/outbox/${nanoid()}`,
+  id: `${actor.actorUrl}outbox/${nanoid()}`,
   actor: actor.actorUrl,
   attributedTo: actor.actorUrl,
   published: new Date().toUTCString(),

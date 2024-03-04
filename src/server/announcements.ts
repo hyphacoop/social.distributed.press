@@ -13,7 +13,7 @@ export class Announcements {
   }
 
   async init (): Promise<void> {
-    const actorUrl = `${this.publicURL}/v1/announcements`
+    const actorUrl = `${this.publicURL}/v1/announcements/`
 
     try {
       const prev = await this.apsystem.store.announcements.getInfo()
@@ -44,7 +44,7 @@ export class Announcements {
       const activity = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
-        id: `${info.actorUrl}/outbox/${nanoid()}`,
+        id: `${info.actorUrl}outbox/${nanoid()}`,
         actor: info.actorUrl,
         attributedTo: info.actorUrl,
         published: new Date().toUTCString(),
