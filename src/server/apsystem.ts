@@ -326,6 +326,7 @@ export default class ActivityPubSystem {
     }
 
     const activityActor = activity.actor
+    const activityType = activity.type
 
     // TODO: handle array of string case and nested object
     if (typeof activityActor !== 'string') {
@@ -337,10 +338,13 @@ export default class ActivityPubSystem {
     const moderationState = await this.modCheck.check(mention, fromActor)
 
     const actorStore = this.store.forActor(fromActor)
-    // TODO: trigger hooks
+
     await actorStore.inbox.add(activity)
 
-    if (moderationState === BLOCKED) {
+    if (activityType === 'Undo') {
+      await this.performUndo(fromActor, activity)
+    } else if (moderationState === BLOCKED) {
+    // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
     } else if (moderationState === ALLOWED) {
       await this.approveActivity(fromActor, activityId)
@@ -358,9 +362,10 @@ export default class ActivityPubSystem {
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
       await this.acceptFollow(fromActor, activity)
+      await this.hookSystem.dispatchOnApproved(fromActor, activity)
+    } else if (type === 'Undo') {
+      await this.performUndo(fromActor, activity)
     }
-    await actorStore.inbox.remove(activityId)
-    await this.hookSystem.dispatchOnApproved(fromActor, activity)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
@@ -371,7 +376,7 @@ export default class ActivityPubSystem {
 
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
-      await this.acceptFollow(fromActor, activity)
+      await this.rejectFollow(fromActor, activity)
     }
     await actorStore.inbox.remove(activityId)
     await this.hookSystem.dispatchOnRejected(fromActor, activity)
@@ -385,6 +390,32 @@ export default class ActivityPubSystem {
       const actorURL = await this.mentionToActor(mention)
       return await this.sendTo(actorURL, fromActor, activity)
     }))
+  }
+
+  async performUndo (fromActor: string, activity: APActivity): Promise<void> {
+    const { actor, object } = activity
+    if (typeof object !== 'string') {
+      throw createError(400, 'Undo must point to URL of object')
+    }
+    if (typeof actor !== 'string') {
+      throw createError(400, 'Activities must contain an actor string')
+    }
+
+    const inbox = this.store.forActor(fromActor).inbox
+
+    // This throws if we haven't seen this activity before
+    const existing = await inbox.get(object)
+    if (existing.actor !== actor) {
+      throw createError(400, 'Undo can only point to activities by same author')
+    }
+    await inbox.remove(object)
+    await this.hookSystem.dispatchOnApproved(fromActor, activity)
+
+    // Detect if follow
+    if (existing.type === 'Follow') {
+      const followerMention = await this.actorToMention(actor, fromActor)
+      await this.removeFollower(fromActor, followerMention)
+    }
   }
 
   async removeFollower (fromActor: string, followerMention: string): Promise<void> {
