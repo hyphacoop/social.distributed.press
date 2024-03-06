@@ -38,9 +38,9 @@ export class Announcements {
   }
 
   async announce (actor: string, info: ActorInfo): Promise<void> {
-    const existedAlready = (await this.apsystem.store.actorsDb.keys().all()).some(k => k === actor)
+    const existedAlready = await this.apsystem.store.actorsDb.get(actor)
 
-    if (!existedAlready && info.announce) {
+    if (existedAlready === undefined && info.announce) {
       const activity = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
