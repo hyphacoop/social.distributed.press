@@ -65,20 +65,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await store.announcements.getInfo()
-    const activities = await store.announcements.outbox.list()
-    const orderedItems = activities
-      // XXX: maybe `new Date()` doesn't correctly parse possible dates?
-      .map(a => ({ ...a, published: typeof a.published === 'string' ? new Date(a.published) : a.published }))
-      .sort((a, b) => +(b.published ?? 0) - +(a.published ?? 0))
-      .map(a => a.id)
-    return await reply.send({
-      '@context': 'https://www.w3.org/ns/activitystreams',
-      id: `${actor.actorUrl}outbox`,
-      type: 'OrderedCollection',
-      totalItems: orderedItems.length,
-      orderedItems
-    })
+    return await reply.send(await apsystem.announcements.getOutbox())
   })
 
   server.get<{
