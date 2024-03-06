@@ -365,6 +365,9 @@ export default class ActivityPubSystem {
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
       await this.performUndo(fromActor, activity)
+    } else {
+      // All other items just get approved in the inbox
+      await this.hookSystem.dispatchOnApproved(fromActor, activity)
     }
   }
 
