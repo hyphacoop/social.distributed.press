@@ -16,7 +16,7 @@ type APActorNonStandard = APActor & {
 export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   server.get<{
     Reply: APActorNonStandard
-  }>('/announcements/', {
+  }>(`/${apsystem.announcements.mention}/`, {
     schema: {
       params: {},
       // XXX: even with Type.Any(), the endpoint returns `{}` :/
@@ -28,7 +28,8 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await store.announcements.getInfo()
+    const actor = await apsystem.announcements.getActor()
+    const actorInfo = await actor.getInfo()
 
     return await reply.send({
       '@context': [
@@ -39,13 +40,13 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
       type: 'Service',
       name: 'Announcements',
-      inbox: `${actor.actorUrl}inbox`,
-      outbox: `${actor.actorUrl}outbox`,
+      inbox: `${actorInfo.actorUrl}inbox`,
+      outbox: `${actorInfo.actorUrl}outbox`,
       publicKey: {
-        id: `${actor.actorUrl}#main-key`,
+        id: `${actorInfo.actorUrl}#main-key`,
 
-        owner: actor.actorUrl,
-        publicKeyPem: actor.keypair.publicKeyPem
+        owner: actorInfo.actorUrl,
+        publicKeyPem: actorInfo.keypair.publicKeyPem
       }
     })
   })
@@ -53,7 +54,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
   server.get<{
     // TODO: typebox APOrderedCollection
     Reply: any
-  }>('/announcements/outbox', {
+  }>(`/${apsystem.announcements.mention}/outbox`, {
     schema: {
       params: {},
       // XXX: even with Type.Any(), the endpoint returns `{}` :/
@@ -74,7 +75,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
     }
     // TODO: typebox APOrderedCollection
     Reply: any
-  }>('/announcements/outbox/:id', {
+  }>(`/${apsystem.announcements.mention}/outbox/:id`, {
     schema: {
       params: Type.Object({
         id: Type.String()
@@ -88,8 +89,9 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await store.announcements.getInfo()
-    const activity = await store.announcements.outbox.get(`${actor.actorUrl}outbox/${request.params.id}`)
+    const actor = await apsystem.announcements.getActor()
+    const actorInfo = await actor.getInfo()
+    const activity = await actor.outbox.get(`${actorInfo.actorUrl}outbox/${request.params.id}`)
     return await reply.send(activity)
   })
 }

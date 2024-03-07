@@ -3,6 +3,7 @@ import { ActorInfo } from '../schemas'
 import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
 import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection } from 'activitypub-types'
+import { ActorStore } from './store/ActorStore'
 
 export class Announcements {
   apsystem: ActivityPubSystem
@@ -13,20 +14,38 @@ export class Announcements {
     this.publicURL = publicURL
   }
 
+  get actorUrl (): string {
+    return `${this.publicURL}/v1/${this.mention}/`
+  }
+
+  get outboxUrl (): string {
+    return `${this.actorUrl}outbox`
+  }
+
+  get mention (): string {
+    const url = new URL(this.publicURL)
+    return url.hostname
+  }
+
+  async getActor (): Promise<ActorStore> {
+    return this.apsystem.store.forActor(this.mention)
+  }
+
   async init (): Promise<void> {
-    const actorUrl = `${this.publicURL}/v1/announcements/`
+    const actorUrl = this.actorUrl
+    const actor = await this.getActor()
 
     try {
-      const prev = await this.apsystem.store.announcements.getInfo()
+      const prev = await actor.getInfo()
       if (prev.actorUrl !== actorUrl) {
-        await this.apsystem.store.announcements.setInfo({
+        await actor.setInfo({
           ...prev,
           actorUrl
         })
       }
     } catch {
       const { privateKeyPem, publicKeyPem } = generateKeypair()
-      await this.apsystem.store.announcements.setInfo({
+      await actor.setInfo({
         actorUrl,
         publicKeyId: `${actorUrl}#${DEFAULT_PUBLIC_KEY_FIELD}`,
         keypair: {
@@ -45,23 +64,23 @@ export class Announcements {
       const activity = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
-        id: `${info.actorUrl}outbox/${nanoid()}`,
+        id: `${this.outboxUrl}/${nanoid()}`,
         actor: info.actorUrl,
         attributedTo: info.actorUrl,
         published: new Date().toUTCString(),
         to: ['https://www.w3.org/ns/activitystreams#Public'],
-        cc: ['https://social.distributed.press/v1/announcements/followers'],
+        cc: [`${this.actorUrl}followers`],
         // TODO: add a template in config
         content: `a wild site appears! ${actor}`
       }
-      await this.apsystem.store.announcements.outbox.add(activity)
-      await this.apsystem.notifyFollowers('announcements', activity)
+      await (await this.getActor()).outbox.add(activity)
+      await this.apsystem.notifyFollowers(this.mention, activity)
     }
   }
 
   async getOutbox (): Promise<APOrderedCollection> {
-    const actor = await this.apsystem.store.announcements.getInfo()
-    const activities = await this.apsystem.store.announcements.outbox.list()
+    const actor = await this.getActor()
+    const activities = await actor.outbox.list()
     const orderedItems = activities
       // XXX: maybe `new Date()` doesn't correctly parse possible dates?
       .map(a => ({ ...a, published: typeof a.published === 'string' ? new Date(a.published) : a.published }))
@@ -71,7 +90,7 @@ export class Announcements {
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
-      id: `${actor.actorUrl}outbox`,
+      id: `${this.actorUrl}outbox`,
       type: 'OrderedCollection',
       totalItems: orderedItems.length,
       orderedItems

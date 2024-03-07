@@ -11,19 +11,19 @@ export const wellKnownRoutes = (cfg: APIConfig, store: Store, apsystem: Activity
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await store.announcements.getInfo()
+    // https://docs.joinmastodon.org/spec/webfinger/
     return await reply
       .headers({
         'Content-Type': 'application/jrd+json'
       })
       .send({
-        subject: `acct:announcements@${cfg.publicURL}`,
-        aliases: [actor.actorUrl],
+        subject: `acct:${apsystem.announcements.mention.slice(1)}`,
+        aliases: [apsystem.announcements.actorUrl],
         links: [
           {
             rel: 'self',
             type: 'application/activity+json',
-            href: actor.actorUrl
+            href: apsystem.announcements.actorUrl
           }
         ]
       })
