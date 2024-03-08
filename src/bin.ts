@@ -16,6 +16,13 @@ await yargs(hideBin(process.argv)).command('run', 'start the Social Inbox servic
   const storage = argv.storage ?? paths.data
   const publicURL = argv.publicURL ?? `http://${host}:${port}`
 
+  if (!(publicURL.startsWith('http://') || publicURL.startsWith('https://'))) {
+    throw new Error('Missing protocol in publicURL')
+  }
+  if (publicURL.endsWith('/')) {
+    throw new Error('Trailing slash in publicURL')
+  }
+
   const server = await buildServer({
     port,
     host,
