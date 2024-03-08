@@ -27,13 +27,13 @@ export class Announcements {
     return url.hostname
   }
 
-  async getActor (): Promise<ActorStore> {
+  getActor (): ActorStore {
     return this.apsystem.store.forActor(this.mention)
   }
 
   async init (): Promise<void> {
     const actorUrl = this.actorUrl
-    const actor = await this.getActor()
+    const actor = this.getActor()
 
     try {
       const prev = await actor.getInfo()
@@ -73,13 +73,13 @@ export class Announcements {
         // TODO: add a template in config
         content: `a wild site appears! ${actor}`
       }
-      await (await this.getActor()).outbox.add(activity)
+      await this.getActor().outbox.add(activity)
       await this.apsystem.notifyFollowers(this.mention, activity)
     }
   }
 
   async getOutbox (): Promise<APOrderedCollection> {
-    const actor = await this.getActor()
+    const actor = this.getActor()
     const activities = await actor.outbox.list()
     const orderedItems = activities
       // XXX: maybe `new Date()` doesn't correctly parse possible dates?

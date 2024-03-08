@@ -28,7 +28,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await apsystem.announcements.getActor()
+    const actor = apsystem.announcements.getActor()
     const actorInfo = await actor.getInfo()
 
     return await reply.send({
@@ -89,7 +89,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = await apsystem.announcements.getActor()
+    const actor = apsystem.announcements.getActor()
     const actorInfo = await actor.getInfo()
     const activity = await actor.outbox.get(`${actorInfo.actorUrl}outbox/${request.params.id}`)
     return await reply.send(activity)
