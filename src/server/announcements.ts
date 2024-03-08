@@ -24,7 +24,7 @@ export class Announcements {
 
   get mention (): string {
     const url = new URL(this.publicURL)
-    return url.hostname
+    return `@announcements@${url.hostname}`
   }
 
   getActor (): ActorStore {
