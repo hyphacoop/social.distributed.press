@@ -38,8 +38,13 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
         'https://w3id.org/security/v1'
       ],
       // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
-      type: 'Service',
+      id: apsystem.announcements.actorUrl,
+      type: 'Person',
       name: 'Announcements',
+      summary: `Announcements for ${new URL(cfg.publicURL).hostname}`,
+      preferredUsername: 'Announcements',
+      following: `${actorInfo.actorUrl}following`,
+      followers: `${actorInfo.actorUrl}followers`,
       inbox: `${actorInfo.actorUrl}inbox`,
       outbox: `${actorInfo.actorUrl}outbox`,
       publicKey: {
