@@ -61,7 +61,7 @@ export class Announcements {
     let existedAlready = false
     try {
       const existingActor = await this.apsystem.store.actorsDb.get(actor)
-      if (existingActor === undefined) existedAlready = true
+      if (existingActor !== undefined) existedAlready = true
     } catch (err) {
       if (!(err as { notFound: boolean }).notFound) {
         throw err
