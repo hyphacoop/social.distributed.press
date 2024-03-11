@@ -58,9 +58,17 @@ export class Announcements {
   }
 
   async announce (actor: string, info: ActorInfo): Promise<void> {
-    const existedAlready = await this.apsystem.store.actorsDb.get(actor)
+    let existedAlready = false
+    try {
+      const existingActor = await this.apsystem.store.actorsDb.get(actor)
+      if (existingActor === undefined) existedAlready = true
+    } catch (err) {
+      if (!(err as { notFound: boolean }).notFound) {
+        throw err
+      }
+    }
 
-    if (existedAlready === undefined && info.announce) {
+    if (!existedAlready && info.announce) {
       const activity = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
