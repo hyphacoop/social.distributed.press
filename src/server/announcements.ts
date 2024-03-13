@@ -1,8 +1,16 @@
 import { nanoid } from 'nanoid'
 import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
 import { generateKeypair } from 'http-signed-fetch'
-import { APOrderedCollection } from 'activitypub-types'
+import { APOrderedCollection, APActor } from 'activitypub-types'
 import { ActorStore } from './store/ActorStore'
+
+type APActorNonStandard = APActor & {
+  publicKey: {
+    id: string
+    owner: string
+    publicKeyPem: string
+  }
+}
 
 export class Announcements {
   apsystem: ActivityPubSystem
@@ -28,6 +36,33 @@ export class Announcements {
 
   get store (): ActorStore {
     return this.apsystem.store.forActor(this.mention)
+  }
+
+  async getActor (): Promise<APActorNonStandard> {
+    const actorInfo = await this.store.getInfo()
+    return {
+      '@context': [
+        // TODO: I copied this from Mastodon, is this correct?
+        'https://www.w3.org/ns/activitystreams',
+        'https://w3id.org/security/v1'
+      ],
+      // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
+      id: this.actorUrl,
+      type: 'Person',
+      name: 'Announcements',
+      summary: `Announcements for ${new URL(this.actorUrl).hostname}`,
+      preferredUsername: 'announcements',
+      following: `${actorInfo.actorUrl}following`,
+      followers: `${actorInfo.actorUrl}followers`,
+      inbox: `${actorInfo.actorUrl}inbox`,
+      outbox: `${actorInfo.actorUrl}outbox`,
+      publicKey: {
+        id: `${actorInfo.actorUrl}#main-key`,
+
+        owner: actorInfo.actorUrl,
+        publicKeyPem: actorInfo.keypair.publicKeyPem
+      }
+    }
   }
 
   async init (): Promise<void> {

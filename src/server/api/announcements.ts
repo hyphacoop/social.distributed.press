@@ -28,32 +28,9 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = apsystem.announcements.getActor()
-    const actorInfo = await actor.getInfo()
+    const actor = await apsystem.announcements.getActor()
 
-    return await reply.send({
-      '@context': [
-        // TODO: I copied this from Mastodon, is this correct?
-        'https://www.w3.org/ns/activitystreams',
-        'https://w3id.org/security/v1'
-      ],
-      // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
-      id: apsystem.announcements.actorUrl,
-      type: 'Person',
-      name: 'Announcements',
-      summary: `Announcements for ${new URL(cfg.publicURL).hostname}`,
-      preferredUsername: 'announcements',
-      following: `${actorInfo.actorUrl}following`,
-      followers: `${actorInfo.actorUrl}followers`,
-      inbox: `${actorInfo.actorUrl}inbox`,
-      outbox: `${actorInfo.actorUrl}outbox`,
-      publicKey: {
-        id: `${actorInfo.actorUrl}#main-key`,
-
-        owner: actorInfo.actorUrl,
-        publicKeyPem: actorInfo.keypair.publicKeyPem
-      }
-    })
+    return await reply.send(actor)
   })
 
   server.get<{
@@ -94,9 +71,8 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    const actor = apsystem.announcements.getActor()
-    const actorInfo = await actor.getInfo()
-    const activity = await actor.outbox.get(`${actorInfo.actorUrl}outbox/${request.params.id}`)
+    const actorUrl = apsystem.announcements.actorUrl
+    const activity = await apsystem.announcements.store.outbox.get(`${actorUrl}outbox/${request.params.id}`)
     return await reply.send(activity)
   })
 }
