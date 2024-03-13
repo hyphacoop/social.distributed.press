@@ -58,17 +58,29 @@ export class Announcements {
   }
 
   async announce (actor: string): Promise<void> {
+    const published = new Date().toUTCString()
+    const to = ['https://www.w3.org/ns/activitystreams#Public']
+    const cc = [`${this.actorUrl}followers`]
     const activity = {
       '@context': 'https://www.w3.org/ns/activitystreams',
-      type: 'Note',
+      type: 'Create',
       id: `${this.outboxUrl}/${nanoid()}`,
       actor: this.actorUrl,
-      attributedTo: this.actorUrl,
-      published: new Date().toUTCString(),
-      to: ['https://www.w3.org/ns/activitystreams#Public'],
-      cc: [`${this.actorUrl}followers`],
-      // TODO: add a template in config
-      content: `a wild site appears! ${actor}`
+      published,
+      to,
+      cc,
+      object: {
+        '@context': 'https://www.w3.org/ns/activitystreams',
+        type: 'Note',
+        id: `${this.outboxUrl}/${nanoid()}/note`,
+        actor: this.actorUrl,
+        attributedTo: this.actorUrl,
+        published,
+        to,
+        cc,
+        // TODO: add a template in config
+        content: `a wild site appears! ${actor}`
+      }
     }
     await this.getActor().outbox.add(activity)
     await this.apsystem.notifyFollowers(this.mention, activity)
