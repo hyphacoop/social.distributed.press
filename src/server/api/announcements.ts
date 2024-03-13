@@ -42,7 +42,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       type: 'Person',
       name: 'Announcements',
       summary: `Announcements for ${new URL(cfg.publicURL).hostname}`,
-      preferredUsername: 'Announcements',
+      preferredUsername: 'announcements',
       following: `${actorInfo.actorUrl}following`,
       followers: `${actorInfo.actorUrl}followers`,
       inbox: `${actorInfo.actorUrl}inbox`,

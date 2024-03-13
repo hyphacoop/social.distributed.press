@@ -26,13 +26,13 @@ export class Announcements {
     return `@announcements@${url.hostname}`
   }
 
-  getActor (): ActorStore {
+  get store (): ActorStore {
     return this.apsystem.store.forActor(this.mention)
   }
 
   async init (): Promise<void> {
     const actorUrl = this.actorUrl
-    const actor = this.getActor()
+    const actor = this.store
 
     try {
       const prev = await actor.getInfo()
@@ -57,9 +57,25 @@ export class Announcements {
   }
 
   async announce (actor: string): Promise<void> {
+    const actorUrl = await this.apsystem.mentionToActor(actor)
     const published = new Date().toUTCString()
     const to = ['https://www.w3.org/ns/activitystreams#Public']
-    const cc = [`${this.actorUrl}followers`]
+    const cc = [`${this.actorUrl}followers`, actorUrl]
+
+    const mentionText = `<span class="h-card"><a href="${actorUrl}" class="u-url mention">${actor}</a></span>`
+
+    const note = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Note',
+      id: `${this.outboxUrl}/${nanoid()}`,
+      attributedTo: this.actorUrl,
+      published,
+      to,
+      cc,
+      // TODO: add a template in config
+      content: `A wild ${mentionText} appears!`,
+      tag: [{ type: 'Mention', href: actorUrl, name: actor }]
+    }
     const activity = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'Create',
@@ -68,25 +84,15 @@ export class Announcements {
       published,
       to,
       cc,
-      object: {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'Note',
-        id: `${this.outboxUrl}/${nanoid()}/note`,
-        actor: this.actorUrl,
-        attributedTo: this.actorUrl,
-        published,
-        to,
-        cc,
-        // TODO: add a template in config
-        content: `a wild site appears! ${actor}`
-      }
+      object: note
     }
-    await this.getActor().outbox.add(activity)
+    await this.store.outbox.add(activity)
+    await this.store.outbox.add(note)
     await this.apsystem.notifyFollowers(this.mention, activity)
   }
 
   async getOutbox (): Promise<APOrderedCollection> {
-    const actor = this.getActor()
+    const actor = this.store
     const activities = await actor.outbox.list()
     const orderedItems = activities
       // XXX: maybe `new Date()` doesn't correctly parse possible dates?
