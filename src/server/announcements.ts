@@ -1,5 +1,4 @@
 import { nanoid } from 'nanoid'
-import { ActorInfo } from '../schemas'
 import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
 import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection } from 'activitypub-types'
