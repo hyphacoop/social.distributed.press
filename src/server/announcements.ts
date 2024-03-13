@@ -73,7 +73,7 @@ export class Announcements {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Note',
         id: `${this.outboxUrl}/${nanoid()}`,
-        actor: info.actorUrl,
+        actor: this.actorUrl,
         attributedTo: info.actorUrl,
         published: new Date().toUTCString(),
         to: ['https://www.w3.org/ns/activitystreams#Public'],
