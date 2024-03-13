@@ -60,7 +60,7 @@ export class Announcements {
   async announce (actor: string, info: ActorInfo): Promise<void> {
     let existedAlready = false
     try {
-      const existingActor = await this.apsystem.store.actorsDb.get(actor)
+      const existingActor = await this.apsystem.store.forActor(actor).getInfo()
       if (existingActor !== undefined) existedAlready = true
     } catch (err) {
       if (!(err as { notFound: boolean }).notFound) {
