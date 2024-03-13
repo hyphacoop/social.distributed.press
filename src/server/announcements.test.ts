@@ -21,6 +21,8 @@ test.beforeEach(async () => {
   // Restore stubs before setting them up again
   sinon.restore()
 
+  sinon.stub(aps, 'mentionToActor').returns(Promise.resolve('http://actor.url'))
+
   await aps.announcements.init()
 })
 
