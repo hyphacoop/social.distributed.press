@@ -57,33 +57,21 @@ export class Announcements {
     }
   }
 
-  async announce (actor: string, info: ActorInfo): Promise<void> {
-    let existedAlready = false
-    try {
-      const existingActor = await this.apsystem.store.forActor(actor).getInfo()
-      if (existingActor !== undefined) existedAlready = true
-    } catch (err) {
-      if (!(err as { notFound: boolean }).notFound) {
-        throw err
-      }
+  async announce (actor: string): Promise<void> {
+    const activity = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Note',
+      id: `${this.outboxUrl}/${nanoid()}`,
+      actor: this.actorUrl,
+      attributedTo: this.actorUrl,
+      published: new Date().toUTCString(),
+      to: ['https://www.w3.org/ns/activitystreams#Public'],
+      cc: [`${this.actorUrl}followers`],
+      // TODO: add a template in config
+      content: `a wild site appears! ${actor}`
     }
-
-    if (!existedAlready && info.announce) {
-      const activity = {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'Note',
-        id: `${this.outboxUrl}/${nanoid()}`,
-        actor: this.actorUrl,
-        attributedTo: info.actorUrl,
-        published: new Date().toUTCString(),
-        to: ['https://www.w3.org/ns/activitystreams#Public'],
-        cc: [`${this.actorUrl}followers`],
-        // TODO: add a template in config
-        content: `a wild site appears! ${actor}`
-      }
-      await this.getActor().outbox.add(activity)
-      await this.apsystem.notifyFollowers(this.mention, activity)
-    }
+    await this.getActor().outbox.add(activity)
+    await this.apsystem.notifyFollowers(this.mention, activity)
   }
 
   async getOutbox (): Promise<APOrderedCollection> {
