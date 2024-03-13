@@ -4,7 +4,7 @@ import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection, APActor } from 'activitypub-types'
 import { ActorStore } from './store/ActorStore'
 
-type APActorNonStandard = APActor & {
+export type APActorNonStandard = APActor & {
   publicKey: {
     id: string
     owner: string

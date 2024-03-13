@@ -1,17 +1,8 @@
-import { APActor } from 'activitypub-types'
-
 import type { APIConfig, FastifyTypebox } from '.'
 import Store from '../store'
 import type ActivityPubSystem from '../apsystem'
+import type { APActorNonStandard } from '../announcements'
 import { Type } from '@sinclair/typebox'
-
-type APActorNonStandard = APActor & {
-  publicKey: {
-    id: string
-    owner: string
-    publicKeyPem: string
-  }
-}
 
 export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   server.get<{
