@@ -38,7 +38,7 @@ test('actor gets announced on .announce', async t => {
     keypair,
     publicKeyId: keypair.publicKeyId
   }
-  await aps.announcements.announce(fakeActor, actorInfo)
+  await aps.announcements.announce(fakeActor)
   await aps.store.forActor(fakeActor).setInfo(actorInfo)
 
   const outbox = await aps.store.forActor('@announcements@localhost').outbox.list()
