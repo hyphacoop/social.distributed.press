@@ -36,7 +36,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const orderedCollection: APOrderedCollection = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'OrderedCollection',
-      id: request.url,
+      id: `${cfg.publicURL}${request.url}`,
       orderedItems
     }
     return await reply.send(orderedCollection)
