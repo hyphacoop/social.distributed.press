@@ -1,16 +1,9 @@
 import { nanoid } from 'nanoid'
 import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
 import { generateKeypair } from 'http-signed-fetch'
-import { APOrderedCollection, APActor } from 'activitypub-types'
+import { APOrderedCollection } from 'activitypub-types'
 import { ActorStore } from './store/ActorStore'
-
-export type APActorNonStandard = APActor & {
-  publicKey: {
-    id: string
-    owner: string
-    publicKeyPem: string
-  }
-}
+import { APActorNonStandard } from '../schemas'
 
 export class Announcements {
   apsystem: ActivityPubSystem
