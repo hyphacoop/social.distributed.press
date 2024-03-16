@@ -126,6 +126,7 @@ export class Announcements {
       // XXX: maybe `new Date()` doesn't correctly parse possible dates?
       .map(a => ({ ...a, published: typeof a.published === 'string' ? new Date(a.published) : a.published }))
       .sort((a, b) => +(b.published ?? 0) - +(a.published ?? 0))
+      .filter(a => a.type !== 'Note')
       .map(a => a.id)
       .filter((id): id is string => id !== undefined)
 
