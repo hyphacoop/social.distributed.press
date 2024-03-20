@@ -344,9 +344,11 @@ export default class ActivityPubSystem {
 
     const { manuallyApprovesFollowers } = await actorStore.getInfo()
 
+    const autoApproveFollow = manuallyApprovesFollowers !== undefined && manuallyApprovesFollowers
+
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && (manuallyApprovesFollowers !== true)) {
+    if (activityType === 'Follow' && autoApproveFollow) {
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
