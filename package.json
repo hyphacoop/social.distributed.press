@@ -14,6 +14,7 @@
     "generate-identity": "ts-node-esm src/scripts/generate-identity.ts",
     "import-blocklist": "ts-node-esm src/scripts/import-blocklist.ts",
     "import-admins": "ts-node-esm src/scripts/import-admins.ts",
+    "client-cli": "ts-node-esm src/client/cli.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
     "dev": "ts-node-esm src/bin.ts run | pino-pretty -c -t",
     "start": "node dist/bin.js run | pino-pretty -c -t",

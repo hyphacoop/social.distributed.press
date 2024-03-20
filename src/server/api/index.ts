@@ -27,6 +27,8 @@ import { blockAllowListRoutes } from './blockallowlist.js'
 import { adminRoutes } from './admins.js'
 import { followerRoutes } from './followers.js'
 import { hookRoutes } from './hooks.js'
+import { announcementsRoutes } from './announcements.js'
+import { wellKnownRoutes } from './wellKnown.js'
 
 export const paths = envPaths('distributed-press')
 
@@ -94,7 +96,10 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
     return 'ok\n'
   })
 
+  await apsystem.announcements.init()
+
   await server.register(v1Routes(cfg, store, apsystem, hookSystem), { prefix: '/v1' })
+  await server.register(wellKnownRoutes(cfg, store, apsystem))
 
   await server.ready()
 
@@ -123,6 +128,7 @@ const v1Routes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem, hoo
     })
   }
 
+  await server.register(announcementsRoutes(cfg, store, apsystem))
   await server.register(creationRoutes(cfg, store, apsystem))
   await server.register(inboxRoutes(cfg, store, apsystem))
   await server.register(outboxRoutes(cfg, store, apsystem))

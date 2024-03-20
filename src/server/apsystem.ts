@@ -15,6 +15,7 @@ import {
 
 import type Store from './store/index.js'
 import { makeSigner } from '../keypair.js'
+import { Announcements } from './announcements.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
 
@@ -45,6 +46,7 @@ export default class ActivityPubSystem {
   modCheck: ModerationChecker
   fetch: FetchLike
   hookSystem: HookSystem
+  announcements: Announcements
 
   constructor (
     publicURL: string,
@@ -58,6 +60,7 @@ export default class ActivityPubSystem {
     this.modCheck = modCheck
     this.fetch = fetch
     this.hookSystem = hookSystem
+    this.announcements = new Announcements(this, publicURL)
   }
 
   makeURL (path: string): string {
@@ -339,9 +342,15 @@ export default class ActivityPubSystem {
 
     const actorStore = this.store.forActor(fromActor)
 
+    const { manuallyApprovesFollowers } = await actorStore.getInfo()
+
+    const autoApproveFollow = manuallyApprovesFollowers !== undefined && manuallyApprovesFollowers
+
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Undo') {
+    if (activityType === 'Follow' && autoApproveFollow) {
+      await this.approveActivity(fromActor, activityId)
+    } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
     } else if (moderationState === BLOCKED) {
     // TODO: Notify of blocks?

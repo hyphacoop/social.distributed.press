@@ -33,8 +33,22 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
       return await reply.code(403).send('Not Allowed')
     }
 
+    let existedAlready = false
+    try {
+      const existingActor = await apsystem.store.forActor(actor).getInfo()
+      if (existingActor !== undefined) existedAlready = true
+    } catch (err) {
+      if (!(err as { notFound: boolean }).notFound) {
+        throw err
+      }
+    }
+
     const info = request.body
     await store.forActor(actor).setInfo(info)
+
+    const shouldAnnounce = !existedAlready && info.announce === true
+    if (shouldAnnounce) await apsystem.announcements.announce(actor)
+
     return await reply.send(info)
   })
 

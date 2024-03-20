@@ -48,6 +48,6 @@ export class ActorStore {
   }
 
   async delete (): Promise<void> {
-    // TODO: delete all keys within the db
+    await this.db.clear()
   }
 }
