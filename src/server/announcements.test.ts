@@ -43,6 +43,6 @@ test('actor gets announced on .announce', async t => {
   await aps.announcements.announce(fakeActor)
   await aps.store.forActor(fakeActor).setInfo(actorInfo)
 
-  const outbox = await aps.store.forActor('@announcements@localhost').outbox.list()
-  t.is(outbox.length, 1, 'something is in outbox')
+  const outbox = await aps.announcements.getOutbox()
+  t.is(outbox.totalItems, 1, 'something is in outbox')
 })
