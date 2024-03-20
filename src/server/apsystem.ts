@@ -342,9 +342,13 @@ export default class ActivityPubSystem {
 
     const actorStore = this.store.forActor(fromActor)
 
+    const { manuallyApprovesFollowers } = await actorStore.getInfo()
+
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Undo') {
+    if (activityType === 'Follow' && (manuallyApprovesFollowers !== true)) {
+      await this.approveActivity(fromActor, activityId)
+    } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
     } else if (moderationState === BLOCKED) {
     // TODO: Notify of blocks?

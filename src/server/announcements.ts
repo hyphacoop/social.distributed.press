@@ -51,7 +51,6 @@ export class Announcements {
       outbox: `${actorInfo.actorUrl}outbox`,
       publicKey: {
         id: `${actorInfo.actorUrl}#main-key`,
-
         owner: actorInfo.actorUrl,
         publicKeyPem: actorInfo.keypair.publicKeyPem
       }
@@ -79,7 +78,8 @@ export class Announcements {
           privateKeyPem,
           publicKeyPem
         },
-        announce: false
+        announce: false,
+        manuallyApprovesFollowers: false
       })
     }
   }
@@ -123,10 +123,10 @@ export class Announcements {
     const actor = this.store
     const activities = await actor.outbox.list()
     const orderedItems = activities
-      // XXX: maybe `new Date()` doesn't correctly parse possible dates?
+      .filter(a => a.type !== 'Note')
+    // XXX: maybe `new Date()` doesn't correctly parse possible dates?
       .map(a => ({ ...a, published: typeof a.published === 'string' ? new Date(a.published) : a.published }))
       .sort((a, b) => +(b.published ?? 0) - +(a.published ?? 0))
-      .filter(a => a.type !== 'Note')
       .map(a => a.id)
       .filter((id): id is string => id !== undefined)
 

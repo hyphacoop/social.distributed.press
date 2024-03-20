@@ -7,7 +7,8 @@ export const ActorInfoSchema = Type.Object({
   actorUrl: Type.String(),
   publicKeyId: Type.String(),
   keypair: KeyPairSchema,
-  announce: Type.Boolean({ default: false })
+  announce: Type.Optional(Type.Boolean({ default: false })),
+  manuallyApprovesFollowers: Type.Optional(Type.Boolean({ default: false }))
 })
 
 export type ActorInfo = Static<typeof ActorInfoSchema>
