@@ -45,7 +45,7 @@ export const creationRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
 
     const info = request.body
     await store.forActor(actor).setInfo(info)
-    if (info.announce && !existedAlready) await apsystem.announcements.announce(actor)
+    if (info.announce == true && !existedAlready) await apsystem.announcements.announce(actor)
 
     return await reply.send(info)
   })
