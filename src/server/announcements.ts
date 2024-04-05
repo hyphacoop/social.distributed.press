@@ -41,7 +41,7 @@ export class Announcements {
       ],
       // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
       id: this.actorUrl,
-      type: 'Person',
+      type: 'Service',
       name: 'Announcements',
       summary: `Announcements for ${new URL(this.actorUrl).hostname}`,
       preferredUsername: 'announcements',
