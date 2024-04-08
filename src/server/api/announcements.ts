@@ -21,7 +21,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
   }, async (request, reply) => {
     const actor = await apsystem.announcements.getActor()
 
-    return await reply.send(actor)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(actor)
   })
 
   server.get<{
@@ -39,7 +39,7 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
-    return await reply.send(await apsystem.announcements.getOutbox())
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(await apsystem.announcements.getOutbox())
   })
 
   server.get<{
@@ -64,6 +64,6 @@ export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: Acti
   }, async (request, reply) => {
     const actorUrl = apsystem.announcements.actorUrl
     const activity = await apsystem.announcements.store.outbox.get(`${actorUrl}outbox/${request.params.id}`)
-    return await reply.send(activity)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(activity)
   })
 }
