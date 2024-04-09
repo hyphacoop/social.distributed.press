@@ -1,6 +1,6 @@
 {
   "name": "distributed-press-social",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "API for the Distributed Press Social Inbox",
   "main": "dist/index.js",
   "bin": {
