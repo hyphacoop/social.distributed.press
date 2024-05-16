@@ -23,11 +23,14 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
   }, async (request, reply) => {
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    const collection = await apsystem.followersCollection(actor)
+
+    // Allow seeing follower count but not followers
+    // TODO: Allow list to be public?
     if (!allowed) {
-      return await reply.code(403).send('Not Allowed')
+      delete collection.items
     }
 
-    const collection = await apsystem.followersCollection(actor)
     return await reply.send(collection)
   })
 
