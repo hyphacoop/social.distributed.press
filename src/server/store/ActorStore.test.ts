@@ -1,7 +1,7 @@
 import test from 'ava'
-import Store from './index'
+import Store from './index.js'
 import { MemoryLevel } from 'memory-level'
-import { ActorStore } from './ActorStore'
+import { ActorStore } from './ActorStore.js'
 
 // Helper function to create a new Store instance
 function newStore (): Store {

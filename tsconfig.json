@@ -6,8 +6,8 @@
   ],
   "compilerOptions": {
     "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "sourceMap": true,
     "declaration": true,
@@ -17,9 +17,10 @@
     "rootDir": "./src",
     "typeRoots": ["./@types"]
   },
-  "ts-node": {
-    "files": true,
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+  "tsimp": {
+    "compilerOptions": {
+      "skipLibCheck": true,
+      "strict": false
+    }
   }
 }
