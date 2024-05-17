@@ -1,7 +1,7 @@
 import test from 'ava'
 import http from 'http'
 import sinon from 'sinon'
-import { SocialInboxClient } from './index'
+import { SocialInboxClient } from './index.js'
 import { generateKeypair } from 'http-signed-fetch'
 
 const instance = 'https://test.instance'

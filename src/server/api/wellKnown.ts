@@ -1,6 +1,6 @@
-import { APIConfig, FastifyTypebox } from '.'
-import ActivityPubSystem from '../apsystem'
-import Store from '../store'
+import { APIConfig, FastifyTypebox } from './index.js'
+import ActivityPubSystem from '../apsystem.js'
+import Store from '../store/index.js'
 
 export const wellKnownRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   server.get<{

@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
-import { ActivityStore } from './ActivityStore'
+import { ActivityStore } from './ActivityStore.js'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
 

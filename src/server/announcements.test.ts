@@ -1,10 +1,10 @@
 import test from 'ava'
 import sinon from 'sinon'
 import fastify from 'fastify'
-import ActivityPubSystem, { FetchLike } from './apsystem'
+import ActivityPubSystem, { FetchLike } from './apsystem.js'
 import Store from './store/index.js'
 import { ModerationChecker } from './moderation.js'
-import HookSystem from './hooksystem'
+import HookSystem from './hooksystem.js'
 import { MemoryLevel } from 'memory-level'
 
 // Create some mock dependencies

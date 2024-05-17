@@ -1,5 +1,5 @@
 import test from 'ava'
-import { AccountListStore } from './AccountListStore'
+import { AccountListStore } from './AccountListStore.js'
 import { MemoryLevel } from 'memory-level'
 
 function newAccountListStore (): AccountListStore {

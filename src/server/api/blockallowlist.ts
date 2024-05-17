@@ -1,4 +1,4 @@
-import { APIConfig, FastifyTypebox } from '.'
+import { APIConfig, FastifyTypebox } from './index.js'
 import { Type } from '@sinclair/typebox'
 
 import createError from 'http-errors'
