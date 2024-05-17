@@ -89,7 +89,7 @@
       "ts": "module"
     },
     "nodeArguments": [
-      "--loader=ts-node/esm",
+      "--import=tsimp/import",
       "--no-warnings"
     ]
   },
