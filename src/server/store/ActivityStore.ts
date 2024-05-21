@@ -1,9 +1,11 @@
 import { AbstractLevel } from 'abstract-level'
 import { APActivity, PublishedField } from 'activitypub-types'
 import createError from 'http-errors'
+import {Mutex} from 'async-mutex';
 
 export class ActivityStore {
   db: AbstractLevel<any, string, any>
+  migrationMutex: Mutex = new Mutex
 
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
@@ -29,9 +31,12 @@ export class ActivityStore {
     await this.removeFromIndex(key)
   }
 
-  get publishedIndex() {
+  get indexesDB() {
     return this.db
       .sublevel('indexes', { valueEncoding: 'json' })
+  }
+  get publishedIndex() {
+    return this.indexesDB
       .sublevel('published', { valueEncoding: 'json' })
   }
 
@@ -56,8 +61,29 @@ export class ActivityStore {
       throw createError(404, `Activity not found for URL: ${url}`)
     }
   }
+  
+  async migrate () {
+    await this.migrationMutex.runExclusive(async () => {
+      let version: number
+      try {
+        version = JSON.parse(await this.indexesDB.get('version'))
+      } catch {
+        version = 0
+      }
+      switch (version) {
+        case 0:
+          for await (const id of this.db.keys()) {
+            const activity = await this.db.get('id')
+            await this.addToIndex(activity.published, id)
+          }
+          await this.indexesDB.put('version', '1')
+      }
+    })
+  }
 
   async list (skip: number = 0, limit: number = 999999): Promise<APActivity[]> {
+    await this.migrate()
+
     const activities: APActivity[] = []
     let skipped = 0
     for await (const id of this.publishedIndex.values({ limit: limit + skip })) {
