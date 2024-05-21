@@ -1,4 +1,4 @@
-import { APActivity, IdField, APOrderedCollection, APOrderedCollectionPage } from 'activitypub-types'
+import { APActivity, IdField, APOrderedCollectionPage } from 'activitypub-types'
 import { Static, Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
@@ -9,7 +9,7 @@ import createError from 'http-errors'
 export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   const GetInboxQuerySchema = Type.Object({
     skip: Type.Optional(Type.Number()),
-    limit: Type.Optional(Type.Number()),
+    limit: Type.Optional(Type.Number())
   })
 
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
@@ -43,7 +43,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const inbox = store.forActor(actor).inbox
     const totalItems = await inbox.count()
 
-    if (!limit) {
+    if (limit === undefined) {
       const page: APOrderedCollectionPage = {
         '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'OrderedCollectionPage',
@@ -65,7 +65,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       id: `${cfg.publicURL}${request.url}`,
       prev,
       next: `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}`,
-      orderedItems,
+      orderedItems
     }
     return await reply.send(orderedCollectionPage)
   })

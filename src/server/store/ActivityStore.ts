@@ -1,11 +1,11 @@
 import { AbstractLevel } from 'abstract-level'
 import { APActivity, PublishedField } from 'activitypub-types'
 import createError from 'http-errors'
-import {Mutex} from 'async-mutex';
+import { Mutex } from 'async-mutex'
 
 export class ActivityStore {
   db: AbstractLevel<any, string, any>
-  migrationMutex: Mutex = new Mutex
+  migrationMutex: Mutex = new Mutex()
 
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
@@ -31,11 +31,12 @@ export class ActivityStore {
     await this.removeFromIndex(key)
   }
 
-  get indexesDB() {
+  get indexesDB (): AbstractLevel<any, string, any> {
     return this.db
       .sublevel('indexes', { valueEncoding: 'json' })
   }
-  get publishedIndex() {
+
+  get publishedIndex (): AbstractLevel<any, string, any> {
     return this.indexesDB
       .sublevel('published', { valueEncoding: 'json' })
   }
@@ -43,6 +44,7 @@ export class ActivityStore {
   async addToIndex (publishedAt: Date, id: string): Promise<void> {
     await this.publishedIndex.put(`${publishedAt.toISOString()}-${id}`, id)
   }
+
   async removeFromIndex (id: string): Promise<void> {
     for await (const [key, value] of this.publishedIndex.iterator()) {
       if (value === id) {
@@ -61,8 +63,8 @@ export class ActivityStore {
       throw createError(404, `Activity not found for URL: ${url}`)
     }
   }
-  
-  async migrate () {
+
+  async migrate (): Promise<void> {
     await this.migrationMutex.runExclusive(async () => {
       let version: number
       try {
@@ -95,10 +97,10 @@ export class ActivityStore {
     }
     return activities
   }
-  
+
   async count (): Promise<number> {
     let count = 0
-    for await (const _ of this.db.keys()) {
+    for await (const _ of this.db.keys()) { // eslint-disable-line @typescript-eslint/no-unused-vars
       count++
     }
     return count
@@ -106,7 +108,7 @@ export class ActivityStore {
 }
 
 function getPublished (published?: PublishedField): Date {
-  if (published) {
+  if (published !== undefined) {
     if (published instanceof Date) return published
     else return new Date(published)
   } else return new Date()
