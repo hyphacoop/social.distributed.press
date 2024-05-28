@@ -6,6 +6,7 @@ import { Mutex } from 'async-mutex'
 export class ActivityStore {
   db: AbstractLevel<any, string, any>
   migrationMutex: Mutex = new Mutex()
+  hasMigrated: boolean = false
 
   constructor (db: AbstractLevel<any, string, any>) {
     this.db = db
@@ -22,13 +23,13 @@ export class ActivityStore {
     }
     const key = this.urlToKey(activity.id)
     await this.db.put(key, activity)
-    await this.addToIndex(getPublished(activity.published), key)
+    await this.addToIndex(activity)
   }
 
   async remove (url: string): Promise<void> {
     const key = this.urlToKey(url)
     await this.db.del(key)
-    await this.removeFromIndex(key)
+    await this.removeFromIndex(url)
   }
 
   get indexesDB (): AbstractLevel<any, string, any> {
@@ -41,17 +42,20 @@ export class ActivityStore {
       .sublevel('published', { valueEncoding: 'json' })
   }
 
-  async addToIndex (publishedAt: Date, id: string): Promise<void> {
-    await this.publishedIndex.put(`${publishedAt.toISOString()}-${id}`, id)
+  makeIndexKey (activity: APActivity) {
+    const publishedAt = getPublished(activity.published)
+    const id = this.urlToKey(activity.id!)
+    return `${publishedAt.toISOString()}-${id}`
   }
 
-  async removeFromIndex (id: string): Promise<void> {
-    for await (const [key, value] of this.publishedIndex.iterator()) {
-      if (value === id) {
-        await this.publishedIndex.del(key)
-        break
-      }
-    }
+  async addToIndex (activity: APActivity): Promise<void> {
+    const id = this.urlToKey(activity.id!)
+    await this.publishedIndex.put(this.makeIndexKey(activity), id)
+  }
+
+  async removeFromIndex (url: string): Promise<void> {
+    const activity = await this.get(url)
+    this.publishedIndex.del(this.makeIndexKey(activity))
   }
 
   async get (url: string): Promise<APActivity> {
@@ -65,10 +69,11 @@ export class ActivityStore {
   }
 
   async migrate (): Promise<void> {
+    if (this.hasMigrated) return
     await this.migrationMutex.runExclusive(async () => {
       let version: number
       try {
-        version = JSON.parse(await this.indexesDB.get('version'))
+        version = await this.indexesDB.get('version', { valueEncoding: 'json' })
       } catch {
         version = 0
       }
@@ -80,6 +85,7 @@ export class ActivityStore {
           }
           await this.indexesDB.put('version', '1')
       }
+      this.hasMigrated = true
     })
   }
 

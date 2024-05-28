@@ -6,12 +6,12 @@ import Store from '../store'
 import type ActivityPubSystem from '../apsystem.js'
 import createError from 'http-errors'
 
-export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
-  const GetInboxQuerySchema = Type.Object({
-    skip: Type.Optional(Type.Number()),
-    limit: Type.Optional(Type.Number())
-  })
+const GetInboxQuerySchema = Type.Object({
+  skip: Type.Optional(Type.Number()),
+  limit: Type.Optional(Type.Number())
+})
 
+export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
   // Follows / Boosts/ Replies / etc will all be mixed in here
   // Note that items will get auto-denied if they match a user / instance in the blocklist
