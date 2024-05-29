@@ -494,18 +494,20 @@ export default class ActivityPubSystem {
     const followers = await actorStore.followers.list()
     const totalItems = followers.length
 
-    const items = countOnly ? undefined : (await Promise.all(
-      followers.map(async (mention) => {
-        try {
-          const url = await this.mentionToActor(mention)
-          return url
-        } catch {
-          // If we can't resolve them just don't show them
-          return ''
-        }
-      })
-      // Filter out failed loads
-    )).filter((item) => item.length !== 0)
+    const items = countOnly
+      ? undefined
+      : (await Promise.all(
+          followers.map(async (mention) => {
+            try {
+              const url = await this.mentionToActor(mention)
+              return url
+            } catch {
+              // If we can't resolve them just don't show them
+              return ''
+            }
+          })
+          // Filter out failed loads
+        )).filter((item) => item.length !== 0)
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
