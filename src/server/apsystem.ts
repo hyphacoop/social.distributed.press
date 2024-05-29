@@ -399,8 +399,13 @@ export default class ActivityPubSystem {
     const followers = await this.store.forActor(fromActor).followers.list()
     // loop through each
     await Promise.all(followers.map(async (mention) => {
-      const actorURL = await this.mentionToActor(mention)
-      return await this.sendTo(actorURL, fromActor, activity)
+      try {
+        const actorURL = await this.mentionToActor(mention)
+        return await this.sendTo(actorURL, fromActor, activity)
+      } catch (e) {
+        // TODO: Remove deleted accounts
+        console.error(`Unable to notify actor ${fromActor}`, e)
+      }
     }))
   }
 
@@ -475,7 +480,7 @@ export default class ActivityPubSystem {
     await this.sendTo(followerURL, fromActor, response)
   }
 
-  async followersCollection (fromActor: string): Promise<APCollection> {
+  async followersCollection (fromActor: string, countOnly: boolean = false): Promise<APCollection> {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)
 
@@ -487,17 +492,29 @@ export default class ActivityPubSystem {
     }
 
     const followers = await actorStore.followers.list()
+    const totalItems = followers.length
 
-    const items = await Promise.all(
-      followers.map(async (mention) => await this.mentionToActor(mention))
-    )
+    const items = countOnly
+      ? undefined
+      : (await Promise.all(
+          followers.map(async (mention) => {
+            try {
+              const url = await this.mentionToActor(mention)
+              return url
+            } catch {
+              // If we can't resolve them just don't show them
+              return ''
+            }
+          })
+          // Filter out failed loads
+        )).filter((item) => item.length !== 0)
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'OrderedCollection',
       id: followersURL,
       items,
-      totalItems: items.length
+      totalItems
     }
   }
 

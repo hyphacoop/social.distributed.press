@@ -23,11 +23,8 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
   }, async (request, reply) => {
     const { actor } = request.params
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
-    if (!allowed) {
-      return await reply.code(403).send('Not Allowed')
-    }
+    const collection = await apsystem.followersCollection(actor, !allowed)
 
-    const collection = await apsystem.followersCollection(actor)
     return await reply.send(collection)
   })
 
