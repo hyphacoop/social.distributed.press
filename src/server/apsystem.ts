@@ -480,7 +480,7 @@ export default class ActivityPubSystem {
     await this.sendTo(followerURL, fromActor, response)
   }
 
-  async followersCollection (fromActor: string): Promise<APCollection> {
+  async followersCollection (fromActor: string, countOnly: boolean = false): Promise<APCollection> {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)
 
@@ -492,8 +492,9 @@ export default class ActivityPubSystem {
     }
 
     const followers = await actorStore.followers.list()
+    const totalItems = followers.length
 
-    const items = (await Promise.all(
+    const items = countOnly ? undefined : (await Promise.all(
       followers.map(async (mention) => {
         try {
           const url = await this.mentionToActor(mention)
@@ -511,7 +512,7 @@ export default class ActivityPubSystem {
       type: 'OrderedCollection',
       id: followersURL,
       items,
-      totalItems: followers.length
+      totalItems
     }
   }
 
