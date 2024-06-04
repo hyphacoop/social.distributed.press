@@ -47,6 +47,7 @@
     "abstract-level": "^1.0.3",
     "activitypub-http-signatures": "^2.0.1",
     "activitypub-types": "^1.0.3",
+    "async-mutex": "^0.5.0",
     "cors": "^2.8.5",
     "csv-parse": "^5.5.0",
     "csv-parser": "^3.0.0",

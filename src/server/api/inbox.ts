@@ -1,10 +1,15 @@
-import { APActivity, IdField, APOrderedCollection } from 'activitypub-types'
-import { Type } from '@sinclair/typebox'
+import { APActivity, IdField, APOrderedCollectionPage } from 'activitypub-types'
+import { Static, Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
 import Store from '../store'
 import type ActivityPubSystem from '../apsystem.js'
 import createError from 'http-errors'
+
+const GetInboxQuerySchema = Type.Object({
+  skip: Type.Optional(Type.Number()),
+  limit: Type.Optional(Type.Number())
+})
 
 export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {
   // Returns an JSON-LD OrderedCollection with items in the moderation queue
@@ -15,31 +20,54 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     Params: {
       actor: string
     }
-    Reply: APOrderedCollection | string
+    Querystring: Static<typeof GetInboxQuerySchema>
+    Reply: APOrderedCollectionPage | string
   }>('/:actor/inbox', {
     schema: {
       params: Type.Object({
         actor: Type.String()
       }),
+      querystring: GetInboxQuerySchema,
       description: 'Items in the inbox queue.',
       tags: ['ActivityPub']
     }
   }, async (request, reply) => {
     const { actor } = request.params
+    let { skip, limit } = request.query
 
     const allowed = await apsystem.hasPermissionActorRequest(actor, request)
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
     }
 
-    const orderedItems = await store.forActor(actor).inbox.list()
-    const orderedCollection: APOrderedCollection = {
+    const inbox = store.forActor(actor).inbox
+    const totalItems = await inbox.count()
+
+    if (limit === undefined) {
+      const page: APOrderedCollectionPage = {
+        '@context': 'https://www.w3.org/ns/activitystreams',
+        type: 'OrderedCollectionPage',
+        totalItems,
+        id: `${cfg.publicURL}${request.url}`,
+        next: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
+      }
+      return await reply.send(page)
+    }
+    skip ??= 0
+
+    const hasPrev = skip > limit
+    const prev = hasPrev ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip - limit}&limit=${limit}` : undefined
+    const orderedItems = await inbox.list(skip, limit)
+    const orderedCollectionPage: APOrderedCollectionPage = {
       '@context': 'https://www.w3.org/ns/activitystreams',
-      type: 'OrderedCollection',
+      type: 'OrderedCollectionPage',
+      totalItems,
       id: `${cfg.publicURL}${request.url}`,
+      prev,
+      next: `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}`,
       orderedItems
     }
-    return await reply.send(orderedCollection)
+    return await reply.send(orderedCollectionPage)
   })
 
   // This is what instances will POST to in order to notify of follows/replies/etc

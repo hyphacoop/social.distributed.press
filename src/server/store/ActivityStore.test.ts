@@ -12,6 +12,7 @@ function newActivityStore (): ActivityStore {
 const activity: APActivity = {
   '@context': 'https://www.w3.org/ns/activitystreams',
   type: 'Create',
+  published: new Date().toISOString(),
   actor: 'https://example.com/user1',
   object: {
     type: 'Note',
@@ -46,8 +47,16 @@ test('ActivityStore - remove activity', async t => {
 
 test('ActivityStore - list activities', async t => {
   const store = newActivityStore()
-  await store.add(activity)
+  const d1 = new Date(40000).toISOString()
+  const d2 = new Date(200000).toISOString()
+  const id1 = 'b'
+  const id2 = 'a'
+  const a1 = { ...activity, id: id1, published: d1 }
+  const a2 = { ...activity, id: id2, published: d2 }
+  await store.add(a1)
+  await store.add(a2)
 
   const activities = await store.list()
-  t.deepEqual(activities, [activity])
+  // Should be newest first
+  t.deepEqual(activities, [a2, a1])
 })
