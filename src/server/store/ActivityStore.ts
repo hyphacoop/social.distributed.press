@@ -28,8 +28,8 @@ export class ActivityStore {
 
   async remove (url: string): Promise<void> {
     const key = this.urlToKey(url)
-    await this.db.del(key)
     await this.removeFromIndex(url)
+    await this.db.del(key)
   }
 
   get indexesDB (): AbstractLevel<any, string, any> {
@@ -80,8 +80,10 @@ export class ActivityStore {
       switch (version) {
         case 0:
           for await (const id of this.db.keys()) {
-            const activity = await this.db.get('id')
-            await this.addToIndex(activity.published, id)
+            // Ignore keys in sublevels
+            if(id.startsWith('!')) continue
+            const activity = await this.db.get(id)
+            await this.addToIndex(activity)
           }
           await this.indexesDB.put('version', '1')
       }
@@ -91,10 +93,9 @@ export class ActivityStore {
 
   async list (skip: number = 0, limit: number = 999999): Promise<APActivity[]> {
     await this.migrate()
-
     const activities: APActivity[] = []
     let skipped = 0
-    for await (const id of this.publishedIndex.values({ limit: limit + skip })) {
+    for await (const id of this.publishedIndex.values({ limit: limit + skip, reverse: true })) {
       if (skipped < skip) {
         skipped++
         continue
