@@ -49,10 +49,10 @@ test('ActivityStore - list activities', async t => {
   const store = newActivityStore()
   const d1 = new Date(40000).toISOString()
   const d2 = new Date(200000).toISOString()
-  const id1 = "b"
-  const id2 = "a"
-  const a1 = {...activity, id: id1, published: d1}
-  const a2 = {...activity, id: id2, published: d2}
+  const id1 = 'b'
+  const id2 = 'a'
+  const a1 = { ...activity, id: id1, published: d1 }
+  const a2 = { ...activity, id: id2, published: d2 }
   await store.add(a1)
   await store.add(a2)
 

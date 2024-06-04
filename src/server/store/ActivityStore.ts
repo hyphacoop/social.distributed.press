@@ -42,20 +42,19 @@ export class ActivityStore {
       .sublevel('published', { valueEncoding: 'json' })
   }
 
-  makeIndexKey (activity: APActivity) {
+  makeIndexKey (activity: APActivity): string {
     const publishedAt = getPublished(activity.published)
-    const id = this.urlToKey(activity.id!)
-    return `${publishedAt.toISOString()}-${id}`
+    if (typeof activity.id !== 'string') throw new Error('Missing ID in Actvity')
+    return `${publishedAt.toISOString()}-${activity.id}`
   }
 
   async addToIndex (activity: APActivity): Promise<void> {
-    const id = this.urlToKey(activity.id!)
-    await this.publishedIndex.put(this.makeIndexKey(activity), id)
+    await this.publishedIndex.put(this.makeIndexKey(activity), activity.id)
   }
 
   async removeFromIndex (url: string): Promise<void> {
     const activity = await this.get(url)
-    this.publishedIndex.del(this.makeIndexKey(activity))
+    await this.publishedIndex.del(this.makeIndexKey(activity))
   }
 
   async get (url: string): Promise<APActivity> {
@@ -81,7 +80,7 @@ export class ActivityStore {
         case 0:
           for await (const id of this.db.keys()) {
             // Ignore keys in sublevels
-            if(id.startsWith('!')) continue
+            if (id.startsWith('!')) continue
             const activity = await this.db.get(id)
             await this.addToIndex(activity)
           }
@@ -100,7 +99,7 @@ export class ActivityStore {
         skipped++
         continue
       }
-      activities.push(await this.db.get(id))
+      activities.push(await this.get(id))
     }
     return activities
   }
