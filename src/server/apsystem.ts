@@ -1,4 +1,4 @@
-import type { APActivity, APActor, APCollection } from 'activitypub-types'
+import type { APActivity, APActor, APCollection, APObject } from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
@@ -374,10 +374,37 @@ export default class ActivityPubSystem {
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
       await this.performUndo(fromActor, activity)
-    } else {
+    } else if ((type === 'Create') || (type === 'Update')) {
+      if (typeof activity.object === 'string') {
+        const response = await this.signedFetch(fromActor, {
+          method: 'get',
+          url: activity.object,
+          headers: {
+            'Content-Type': 'application/ld+json'
+          }
+        })
+
+        if (!response.ok) { throw createError(404, `Unable to load object for activity at ${activity.object}`) }
+
+        const object = await response.json()
+        // We check that the activity actor is set elsewhere
+        await this.storeObject(fromActor, object, activity.actor as string)
+      } else if (typeof activity.object === 'object') {
+        // TODO: Account for arrays
+        await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+      }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     }
+  }
+
+  async storeObject (fromActor: string, object: APObject, attributedTo: string = ''): Promise<void> {
+    if ((attributedTo.length !== 0) && (object.attributedTo !== attributedTo)) {
+      // TODO Shuld this be a different error? Should we just skip?
+      throw createError(419, `Unexpected author for object in activity. Expected ${attributedTo}, got ${object.attributedTo as string}. In object at ${object.id as string}`)
+    }
+    const actorStore = this.store.forActor(fromActor)
+    await actorStore.inboxObjects.add(object)
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
