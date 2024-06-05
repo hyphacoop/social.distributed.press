@@ -507,6 +507,19 @@ export default class ActivityPubSystem {
     await this.sendTo(followerURL, fromActor, response)
   }
 
+  async repliesCollection (fromActor: string, inReplyTo: string): Promise<APCollection> {
+    const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo })
+    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${encodeURIComponent(inReplyTo)}`)
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems: items.length
+    }
+  }
+
   async followersCollection (fromActor: string, countOnly: boolean = false): Promise<APCollection> {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)

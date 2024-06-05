@@ -89,7 +89,7 @@ export class APObjectStore {
     }
   }
 
-  async list ({ skip = 0, limit = 32, attributedTo, inReplyTo }: ListParameters = {}): Promise<APObject[]> {
+  async list ({ skip = 0, limit = Infinity, attributedTo, inReplyTo }: ListParameters = {}): Promise<APObject[]> {
     const items: APObject[] = []
 
     let iterator = null
