@@ -2,9 +2,12 @@ import { AbstractLevel } from 'abstract-level'
 import { APObject } from 'activitypub-types'
 import createError from 'http-errors'
 
+export const PUBLIC_TO_URL = 'https://www.w3.org/ns/activitystreams#Public'
+
 export interface ListParameters {
   inReplyTo?: string
   attributedTo?: string
+  to?: string
   skip?: number
   limit?: number
 }
@@ -89,7 +92,7 @@ export class APObjectStore {
     }
   }
 
-  async list ({ skip = 0, limit = Infinity, attributedTo, inReplyTo }: ListParameters = {}): Promise<APObject[]> {
+  async list ({ skip = 0, limit = Infinity, attributedTo, inReplyTo, to }: ListParameters = {}): Promise<APObject[]> {
     const items: APObject[] = []
 
     let iterator = null
@@ -108,7 +111,21 @@ export class APObjectStore {
         skip--
         continue
       }
-      items.push(await this.get(url))
+      const object = await this.get(url)
+
+      if (Array.isArray(object.to)) {
+        if (!object.to.includes(PUBLIC_TO_URL)) {
+          if ((to === undefined) || !object.to.includes(to)) {
+            continue
+          }
+        }
+      } else if (typeof object.to === 'string') {
+        if (object.to !== PUBLIC_TO_URL) {
+          if (object.to !== to) continue
+        }
+      }
+      // TODO: Should we handle `to` being an object?
+      items.push(object)
     }
 
     return items

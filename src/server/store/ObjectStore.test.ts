@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
-import { APObjectStore } from './ObjectStore'
+import { APObjectStore, PUBLIC_TO_URL } from './ObjectStore'
 import { MemoryLevel } from 'memory-level'
 import { APNote } from 'activitypub-types'
 
@@ -13,6 +13,7 @@ const note: APNote = {
   '@context': 'https://www.w3.org/ns/activitystreams',
   type: 'Note',
   id: 'https://example.com/note1',
+  to: [PUBLIC_TO_URL],
   published: new Date().toISOString(),
   attributedTo: 'https://example.com/user1',
   content: 'Hello world'
@@ -42,4 +43,21 @@ test('APObjectStore - list from indexes', async t => {
 
   const fromA = await store.list({ attributedTo: a.attributedTo })
   t.deepEqual(fromA, [b, a], 'Got just notes by a')
+})
+
+test('APObjectStore - filter private objects', async t => {
+  const store = newStore()
+  const exampleTo = 'https://example.com'
+
+  const a = { ...note, to: [exampleTo] }
+
+  await store.add(a)
+
+  const publicList = await store.list()
+
+  t.deepEqual(publicList, [], 'Private note was not listed')
+
+  const privateList = await store.list({ to: exampleTo })
+
+  t.deepEqual(privateList, [a], 'Private posts are listable')
 })

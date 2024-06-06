@@ -507,8 +507,8 @@ export default class ActivityPubSystem {
     await this.sendTo(followerURL, fromActor, response)
   }
 
-  async repliesCollection (fromActor: string, inReplyTo: string): Promise<APCollection> {
-    const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo })
+  async repliesCollection (fromActor: string, inReplyTo: string, to?: string): Promise<APCollection> {
+    const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo, to })
     const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${encodeURIComponent(inReplyTo)}`)
 
     return {

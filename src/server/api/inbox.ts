@@ -132,8 +132,15 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor, inReplyTo } = request.params
 
-    // No need for verification?
-    const collection = await apsystem.repliesCollection(actor, decodeURIComponent(inReplyTo))
+    let to: string | undefined
+
+    // Only try to set `to` if it's a signed request
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      to = await apsystem.mentionToActor(submittedActorMention)
+    }
+
+    const collection = await apsystem.repliesCollection(actor, decodeURIComponent(inReplyTo), to)
 
     return await reply.send(collection)
   })
