@@ -1,4 +1,4 @@
-import { APActivity } from 'activitypub-types'
+import { APActivity, APObject } from 'activitypub-types'
 import { fetch as signedFetch, generateKeypair } from 'http-signed-fetch'
 import { KeyPair } from '../keypair.js'
 import { ActorInfo } from '../schemas.js'
@@ -185,6 +185,13 @@ export class SocialInboxClient {
   async fetchInbox (actor: string = this.account): Promise<any> {
     const response = await this.sendRequest(GET, `/${actor}/inbox`)
     return await response.json()
+  }
+
+  async repliesFor (inReplyTo: string, actor: string): Promise<APObject[]> {
+    // TODO: Handle collection stuff and paging
+    const response = await this.sendRequest(GET, `/${actor}/inbox/replies/${inReplyTo}`)
+    const collection = await response.json()
+    return collection.item ?? collection.orderedItems
   }
 
   async postToInbox (activity: APActivity, actor: string = this.account): Promise<void> {

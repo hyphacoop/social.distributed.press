@@ -120,7 +120,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       inReplyTo: string
     }
     Reply: APOrderedCollection | string
-  }>('/:actor/outbox/replies/:inReplyTo', {
+  }>('/:actor/inbox/replies/:inReplyTo', {
     schema: {
       params: Type.Object({
         actor: Type.String(),
