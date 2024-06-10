@@ -1,4 +1,4 @@
-import { APActivity, IdField, APOrderedCollectionPage } from 'activitypub-types'
+import { APActivity, IdField, APOrderedCollectionPage, APOrderedCollection } from 'activitypub-types'
 import { Static, Type } from '@sinclair/typebox'
 
 import type { APIConfig, FastifyTypebox } from '.'
@@ -111,6 +111,38 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     await apsystem.ingestActivity(actor, activity)
 
     return await reply.send({ message: 'ok' })
+  })
+
+  // TODO: Paging?
+  server.get<{
+    Params: {
+      actor: string
+      inReplyTo: string
+    }
+    Reply: APOrderedCollection | string
+  }>('/:actor/inbox/replies/:inReplyTo', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        inReplyTo: Type.String()
+      }),
+      description: 'Replies for a post',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, inReplyTo } = request.params
+
+    let to: string | undefined
+
+    // Only try to set `to` if it's a signed request
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      to = await apsystem.mentionToActor(submittedActorMention)
+    }
+
+    const collection = await apsystem.repliesCollection(actor, decodeURIComponent(inReplyTo), to)
+
+    return await reply.send(collection)
   })
 
   // Deny a follow request/boost/etc

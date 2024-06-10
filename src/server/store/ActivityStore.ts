@@ -44,7 +44,7 @@ export class ActivityStore {
 
   makeIndexKey (activity: APActivity): string {
     const publishedAt = getPublished(activity.published)
-    if (typeof activity.id !== 'string') throw new Error('Missing ID in Actvity')
+    if (typeof activity.id !== 'string') throw createError(400, 'Missing ID in Actvity')
     return `${publishedAt.toISOString()}-${activity.id}`
   }
 
@@ -90,7 +90,7 @@ export class ActivityStore {
     })
   }
 
-  async list (skip: number = 0, limit: number = 999999): Promise<APActivity[]> {
+  async list (skip: number = 0, limit: number = 32): Promise<APActivity[]> {
     await this.migrate()
     const activities: APActivity[] = []
     let skipped = 0

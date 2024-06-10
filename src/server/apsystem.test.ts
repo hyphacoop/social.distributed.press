@@ -6,6 +6,13 @@ import Store from './store/index.js'
 import { ModerationChecker } from './moderation.js'
 import HookSystem from './hooksystem'
 import signatureParser from 'activitypub-http-signatures'
+import { MemoryLevel } from 'memory-level'
+import { APActivity } from 'activitypub-types'
+
+// Helper function to create a new Store instance
+function newStore (): Store {
+  return new Store(new MemoryLevel({ valueEncoding: 'json' }))
+}
 
 // Create some mock dependencies
 const mockStore = {
@@ -164,6 +171,39 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 
   const result = await aps.mentionToActor(mention)
   t.is(result, 'http://actor.url', 'should fetch from Webfinger and fallback to Host-Meta on 404')
+})
+
+test('ActivityPubSystem - List replies', async t => {
+  const store = newStore()
+  const hookSystem = new HookSystem(store, mockFetch)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem)
+
+  const actorMention = '@user1@example.com'
+  const inReplyTo = 'https://example.com/note2'
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Create',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object: {
+      type: 'Note',
+      published: new Date().toISOString(),
+      content: 'Hello world',
+      id: 'https://example.com/note1',
+      inReplyTo,
+      attributedTo: 'https://example.com/user1'
+    },
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.repliesCollection(actorMention, inReplyTo)
+
+  t.deepEqual(collection.items, [activity.object])
 })
 
 // After all tests, restore all sinon mocks

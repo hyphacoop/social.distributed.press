@@ -4,10 +4,12 @@ import { ActorInfo } from './index.js'
 import { ActivityStore } from './ActivityStore.js'
 import { AccountListStore } from './AccountListStore.js'
 import { HookStore } from './HookStore.js'
+import { APObjectStore } from './ObjectStore.js'
 
 export class ActorStore {
   db: AbstractLevel<any, string, any>
   inbox: ActivityStore
+  inboxObjects: APObjectStore
   outbox: ActivityStore
   blocklist: AccountListStore
   allowlist: AccountListStore
@@ -18,6 +20,9 @@ export class ActorStore {
     this.db = db
     const inboxDB = this.db.sublevel('inbox', { valueEncoding: 'json' })
     this.inbox = new ActivityStore(inboxDB)
+
+    const inboxObjectDB = this.db.sublevel('inboxObjects', { valueEncoding: 'json' })
+    this.inboxObjects = new APObjectStore(inboxObjectDB)
 
     const outboxDB = this.db.sublevel('outbox', { valueEncoding: 'json' })
     this.outbox = new ActivityStore(outboxDB)
