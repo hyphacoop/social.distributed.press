@@ -39,7 +39,7 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
 
     // TODO: logic for notifying specific followers of replies
     await apsystem.notifyFollowers(actor, activity)
-    return await reply.send({ message: 'ok' })
+    return await reply.code(200).type('application/json').send(JSON.stringify({ message: 'ok' }))
   })
   server.get<{
     Params: {
@@ -69,7 +69,6 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
     }
 
     const activity = await apsystem.getOutboxItem(actor, id)
-
-    return await reply.send(activity)
+    return await reply.code(200).type('application/json').send(JSON.stringify(activity))
   })
 }
