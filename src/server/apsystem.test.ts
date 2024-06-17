@@ -48,7 +48,7 @@ const mockRequest = {
 } as unknown as FastifyRequest
 
 // Initialize the main class to test
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer)
+const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
 
 test.beforeEach(() => {
   // Restore stubs before setting them up again
@@ -185,7 +185,7 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 test('ActivityPubSystem - List replies', async t => {
   const store = newStore()
   const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'

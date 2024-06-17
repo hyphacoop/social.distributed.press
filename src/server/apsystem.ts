@@ -6,8 +6,7 @@ import HookSystem from './hooksystem.js'
 import { XMLParser } from 'fast-xml-parser'
 import createError from 'http-errors'
 
-import fastify from 'fastify'
-import type { FastifyRequest, FastifyInstance } from 'fastify'
+import type { FastifyRequest, FastifyBaseLogger } from 'fastify'
 import {
   ModerationChecker,
   BLOCKED,
@@ -19,12 +18,6 @@ import { makeSigner } from '../keypair.js'
 import { Announcements } from './announcements.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
-
-export const server = fastify({
-  logger: {
-    level: 'info'
-  }
-})
 
 export interface BasicFetchParams {
   url: string
@@ -53,7 +46,7 @@ export default class ActivityPubSystem {
   modCheck: ModerationChecker
   fetch: FetchLike
   hookSystem: HookSystem
-  server: FastifyInstance
+  log: FastifyBaseLogger
   announcements: Announcements
 
   constructor (
@@ -61,7 +54,7 @@ export default class ActivityPubSystem {
     store: Store,
     modCheck: ModerationChecker,
     hookSystem: HookSystem,
-    server: FastifyInstance,
+    log: FastifyBaseLogger,
     fetch: FetchLike = globalThis.fetch
   ) {
     this.publicURL = publicURL
@@ -69,7 +62,7 @@ export default class ActivityPubSystem {
     this.modCheck = modCheck
     this.fetch = fetch
     this.hookSystem = hookSystem
-    this.server = server
+    this.log = log
     this.announcements = new Announcements(this, publicURL)
   }
 
@@ -127,14 +120,14 @@ export default class ActivityPubSystem {
       publicKey.publicKeyPem // The PEM string from the public key object
     )
 
-    this.server.log.debug('Verifying signed request', { url: request.url })
+    this.log.debug('Verifying signed request', { url: request.url })
 
     if (!success) {
-      this.server.log.error('Failed to verify HTTP signature', { actorURL: keyId })
+      this.log.error('Failed to verify HTTP signature', { actorURL: keyId })
       throw createError(401, `Invalid HTTP signature for ${keyId}`)
     }
 
-    this.server.log.info('Successfully verified HTTP signature', { actorURL: keyId })
+    this.log.info('Successfully verified HTTP signature', { actorURL: keyId })
 
     // TODO: Handle getting the actor from something other than the key id??
     const parsedActorURL = new URL(keyId)
@@ -336,7 +329,7 @@ export default class ActivityPubSystem {
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {
-    this.server.log.info('Ingesting activity', { type: activity.type, fromActor })
+    this.log.info('Ingesting activity', { type: activity.type, fromActor, id: activity.id })
 
     const activityId = activity.id
 
@@ -366,19 +359,19 @@ export default class ActivityPubSystem {
     await actorStore.inbox.add(activity)
 
     if (activityType === 'Follow' && autoApproveFollow) {
-      this.server.log.info('Auto-approving follow request', { fromActor, target: activity.object })
+      this.log.info('Auto-approving follow request', { fromActor, target: activity.object })
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
     } else if (moderationState === BLOCKED) {
-      this.server.log.warn('Blocking activity due to moderation settings', { activityId: activity.id })
+      this.log.warn('Blocking activity due to moderation settings', { activityId: activity.id })
       // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
     } else if (moderationState === ALLOWED) {
-      this.server.log.info('Allowing activity through moderation', { activityId: activity.id })
+      this.log.info('Allowing activity through moderation', { activityId: activity.id })
       await this.approveActivity(fromActor, activityId)
     } else {
-      this.server.log.info('Queueing activity for manual moderation', { activityId: activity.id })
+      this.log.info('Queueing activity for manual moderation', { activityId: activity.id })
       await this.hookSystem.dispatchModerationQueued(fromActor, activity)
     }
   }
@@ -389,11 +382,11 @@ export default class ActivityPubSystem {
 
     const { type } = activity
 
-    this.server.log.info('Approving activity', { fromActor, activityId, type: activity.type })
+    this.log.info('Approving activity', { fromActor, activityId, type: activity.type })
 
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
-      this.server.log.debug('Processing follow activity', { fromActor, target: activity.actor })
+      this.log.debug('Processing follow activity', { fromActor, target: activity.actor })
       await this.acceptFollow(fromActor, activity)
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
@@ -432,7 +425,7 @@ export default class ActivityPubSystem {
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
-    this.server.log.warn(`Rejecting activity ${activityId} for actor ${fromActor}`)
+    this.log.warn(`Rejecting activity ${activityId} for actor ${fromActor}`)
 
     const actorStore = this.store.forActor(fromActor)
     const activity = await actorStore.inbox.get(activityId)

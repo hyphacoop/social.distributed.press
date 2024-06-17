@@ -24,7 +24,7 @@ sinon.stub(mockServer, 'log').value({
   warn: sinon.fake()
 })
 
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer)
+const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
 
 test.beforeEach(async () => {
   // Restore stubs before setting them up again
