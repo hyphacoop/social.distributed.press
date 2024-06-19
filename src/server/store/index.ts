@@ -4,7 +4,7 @@ import { ActorStore } from './ActorStore.js'
 import { AccountListStore } from './AccountListStore.js'
 import createError from 'http-errors'
 
-export { ActorInfoSchema, ActorInfo } from '../../schemas.js'
+export { ActorInfoSchema, type ActorInfo } from '../../schemas.js'
 
 export default class Store {
   db: AbstractLevel<any, string, any>

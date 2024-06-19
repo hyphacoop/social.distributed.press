@@ -1,7 +1,7 @@
-import type { APIConfig, FastifyTypebox } from '.'
-import Store from '../store'
-import type ActivityPubSystem from '../apsystem'
-import type { APActorNonStandard } from '../../schemas'
+import type { APIConfig, FastifyTypebox } from './index.js'
+import Store from '../store/index.js'
+import type ActivityPubSystem from '../apsystem.js'
+import type { APActorNonStandard } from '../../schemas.js'
 import { Type } from '@sinclair/typebox'
 
 export const announcementsRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {

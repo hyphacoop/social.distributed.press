@@ -1,9 +1,9 @@
 import { nanoid } from 'nanoid'
-import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
+import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem.js'
 import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection } from 'activitypub-types'
-import { ActorStore } from './store/ActorStore'
-import { APActorNonStandard } from '../schemas'
+import { ActorStore } from './store/ActorStore.js'
+import { APActorNonStandard } from '../schemas.js'
 
 export class Announcements {
   apsystem: ActivityPubSystem
