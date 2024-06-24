@@ -91,7 +91,7 @@ export default class ActivityPubSystem {
   }
 
   async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
-  // TODO: Fetch and verify Digest header
+    // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
@@ -120,14 +120,14 @@ export default class ActivityPubSystem {
       publicKey.publicKeyPem // The PEM string from the public key object
     )
 
-    this.log.debug('Verifying signed request', { url: request.url })
+    this.log.debug({ url: request.url }, 'Verifying signed request')
 
     if (!success) {
-      this.log.error('Failed to verify HTTP signature', { actorURL: keyId })
+      this.log.error({ actorURL: keyId }, 'Failed to verify HTTP signature')
       throw createError(401, `Invalid HTTP signature for ${keyId}`)
     }
 
-    this.log.info('Successfully verified HTTP signature', { actorURL: keyId })
+    this.log.info({ actorURL: keyId }, 'Successfully verified HTTP signature')
 
     // TODO: Handle getting the actor from something other than the key id??
     const parsedActorURL = new URL(keyId)
@@ -329,7 +329,7 @@ export default class ActivityPubSystem {
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {
-    this.log.info('Ingesting activity', { type: activity.type, fromActor, id: activity.id })
+    this.log.info({ type: activity.type, fromActor, id: activity.id }, 'Ingesting activity')
 
     const activityId = activity.id
 
@@ -359,19 +359,19 @@ export default class ActivityPubSystem {
     await actorStore.inbox.add(activity)
 
     if (activityType === 'Follow' && autoApproveFollow) {
-      this.log.info('Auto-approving follow request', { fromActor, target: activity.object })
+      this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
     } else if (moderationState === BLOCKED) {
-      this.log.warn('Blocking activity due to moderation settings', { activityId: activity.id })
+      this.log.warn({ activityId: activity.id }, 'Blocking activity due to moderation settings')
       // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
     } else if (moderationState === ALLOWED) {
-      this.log.info('Allowing activity through moderation', { activityId: activity.id })
+      this.log.info({ activityId: activity.id }, 'Allowing activity through moderation')
       await this.approveActivity(fromActor, activityId)
     } else {
-      this.log.info('Queueing activity for manual moderation', { activityId: activity.id })
+      this.log.info({ activityId: activity.id }, 'Queueing activity for manual moderation')
       await this.hookSystem.dispatchModerationQueued(fromActor, activity)
     }
   }
@@ -382,11 +382,11 @@ export default class ActivityPubSystem {
 
     const { type } = activity
 
-    this.log.info('Approving activity', { fromActor, activityId, type: activity.type })
+    this.log.info({ fromActor, activityId, type: activity.type }, 'Approving activity')
 
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
-      this.log.debug('Processing follow activity', { fromActor, target: activity.actor })
+      this.log.debug({ fromActor, target: activity.actor }, 'Processing follow activity')
       await this.acceptFollow(fromActor, activity)
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
@@ -561,11 +561,11 @@ export default class ActivityPubSystem {
               const url = await this.mentionToActor(mention)
               return url
             } catch {
-              // If we can't resolve them just don't show them
+            // If we can't resolve them just don't show them
               return ''
             }
           })
-          // Filter out failed loads
+        // Filter out failed loads
         )).filter((item) => item.length !== 0)
 
     return {
@@ -600,7 +600,7 @@ export interface MentionParts {
 }
 
 export function parseMention (mention: string): MentionParts {
-// parse out domain
+  // parse out domain
   const sections = mention.split('@')
   const username = sections[1]
   const domain = sections[2]
