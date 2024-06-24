@@ -354,7 +354,7 @@ export default class ActivityPubSystem {
 
     const { manuallyApprovesFollowers } = await actorStore.getInfo()
 
-    const autoApproveFollow = manuallyApprovesFollowers !== undefined && manuallyApprovesFollowers
+    const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
     await actorStore.inbox.add(activity)
 
