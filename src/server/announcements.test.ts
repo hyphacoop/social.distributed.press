@@ -1,5 +1,6 @@
 import test from 'ava'
 import sinon from 'sinon'
+import fastify from 'fastify'
 import ActivityPubSystem, { FetchLike } from './apsystem'
 import Store from './store/index.js'
 import { ModerationChecker } from './moderation.js'
@@ -15,7 +16,15 @@ const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit
 }
 const mockHooks = new HookSystem(mockStore, mockFetch)
 
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks)
+const mockServer = fastify({ logger: true })
+
+sinon.stub(mockServer, 'log').value({
+  info: sinon.fake(),
+  error: sinon.fake(),
+  warn: sinon.fake()
+})
+
+const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
 
 test.beforeEach(async () => {
   // Restore stubs before setting them up again
