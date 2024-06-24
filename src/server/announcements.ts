@@ -98,7 +98,11 @@ export class Announcements {
     await Promise.all(items.map(async (item) => {
       const { id, type } = item
       if (AUTO_APPROVED_TYPES.includes(type as string)) {
-        await this.apsystem.approveActivity(this.mention, id as string)
+        try {
+          await this.apsystem.approveActivity(this.mention, id as string)
+        } catch {
+          // If it fails, that's okay, we can skip it. Probs malformed.
+        }
       }
       await this.store.inbox.remove(id as string)
     }))
