@@ -456,9 +456,14 @@ export default class ActivityPubSystem {
   }
 
   async performUndo (fromActor: string, activity: APActivity): Promise<void> {
-    const { actor, object } = activity
+    const { actor } = activity
+    let object = activity.object
     if (typeof object !== 'string') {
-      throw createError(400, 'Undo must point to URL of object')
+      if ((object != null) && 'id' in object && typeof object.id === 'string') {
+        object = object.id
+      } else {
+        throw createError(400, 'Undo must point to URL of object')
+      }
     }
     if (typeof actor !== 'string') {
       throw createError(400, 'Activities must contain an actor string')

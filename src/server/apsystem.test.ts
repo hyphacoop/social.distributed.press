@@ -215,6 +215,65 @@ test('ActivityPubSystem - List replies', async t => {
   t.deepEqual(collection.items, [activity.object])
 })
 
+test('ActivityPubSystem - Undo activity', async t => {
+  const store = newStore()
+  const hookSystem = new HookSystem(store, mockFetch)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+
+  const actorMention = '@user1@example.com'
+  const inReplyTo = 'https://example.com/note2'
+
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Create',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object: {
+      type: 'Note',
+      published: new Date().toISOString(),
+      content: 'Hello world',
+      id: 'https://example.com/note1',
+      inReplyTo,
+      attributedTo: 'https://example.com/user1'
+    },
+    id: 'https://example.com/activity1'
+  }
+
+  const undoActivity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Undo',
+    actor: 'https://example.com/user1',
+    object: {
+      id: activity.id,
+      type: activity.type
+    },
+    id: 'https://example.com/undo1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  // Log to verify the activity is in the store
+  const storedActivity = await store.forActor(actorMention).inbox.get(activity.id as string)
+  console.log('Stored activity:', storedActivity)
+
+  t.truthy(storedActivity, 'The activity is stored successfully')
+
+  // Add Undo activity
+  await store.forActor(actorMention).inbox.add(undoActivity)
+  await aps.approveActivity(actorMention, undoActivity.id as string)
+
+  const storedUndoActivity = await store.forActor(actorMention).inbox.get(undoActivity.id as string)
+  console.log('Stored undo activity:', storedUndoActivity)
+
+  t.truthy(storedUndoActivity, 'The undo activity is stored successfully')
+
+  // Activity is undone
+  const collection = await aps.repliesCollection(actorMention, inReplyTo)
+  t.deepEqual(collection.items, [activity.object])
+})
+
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
   // Restore all sinon mocks
