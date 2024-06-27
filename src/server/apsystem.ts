@@ -459,8 +459,9 @@ export default class ActivityPubSystem {
     const { actor } = activity
     let object = activity.object
     if (typeof object !== 'string') {
-      object = ((object != null) && 'id' in object && typeof object.id === 'string' && object.id) || undefined
-      if (typeof object !== 'string') {
+      if ((object != null) && 'id' in object && typeof object.id === 'string') {
+        object = object.id
+      } else {
         throw createError(400, 'Undo must point to URL of object')
       }
     }
