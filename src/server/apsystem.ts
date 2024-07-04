@@ -94,7 +94,7 @@ export default class ActivityPubSystem {
     // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
 
-    if (!headers.signature) {
+    if (headers.signature === undefined) {
       return new Promise((resolve, reject) => resolve(""))
     }
 
