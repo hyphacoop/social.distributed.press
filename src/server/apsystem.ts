@@ -95,7 +95,7 @@ export default class ActivityPubSystem {
     const { url, method, headers } = request
 
     if (headers.signature === undefined) {
-      return new Promise((resolve, reject) => resolve(""))
+      return ""
     }
 
     const signature = signatureParser.parse({ url, method, headers })
