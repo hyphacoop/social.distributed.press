@@ -94,12 +94,17 @@ export class ActivityStore {
     await this.migrate()
     const activities: APActivity[] = []
     let skipped = 0
-    for await (const id of this.publishedIndex.values({ limit: limit + skip, reverse: true })) {
+    for await (const [indexKey, id] of this.publishedIndex.iterator({ limit: limit + skip, reverse: true })) {
       if (skipped < skip) {
         skipped++
         continue
       }
-      activities.push(await this.get(id))
+      try {
+        const activity = await this.get(id)
+        activities.push(activity)
+      } catch (e) {
+        await this.publishedIndex.del(indexKey)
+      }
     }
     return activities
   }
