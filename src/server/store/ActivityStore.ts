@@ -99,7 +99,12 @@ export class ActivityStore {
         skipped++
         continue
       }
-      activities.push(await this.get(id))
+      try {
+        const activity = await this.get(id)
+        activities.push(activity)
+      } catch (e) {
+        await this.removeFromIndex(id)
+      }
     }
     return activities
   }

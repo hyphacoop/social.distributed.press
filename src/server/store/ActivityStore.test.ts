@@ -43,6 +43,10 @@ test('ActivityStore - remove activity', async t => {
     instanceOf: Error,
     message: `Activity not found for URL: ${activity.id!}`
   })
+
+  const items = await store.list()
+
+  t.deepEqual(items, [], 'No items left after remove')
 })
 
 test('ActivityStore - list activities', async t => {
