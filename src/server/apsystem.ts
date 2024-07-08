@@ -93,6 +93,11 @@ export default class ActivityPubSystem {
   async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
     // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
+
+    if (headers.signature === undefined) {
+      throw createError(401, 'Request is missing signature header', { fromActor, url, method })
+    }
+
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
 
