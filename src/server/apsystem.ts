@@ -95,7 +95,7 @@ export default class ActivityPubSystem {
     const { url, method, headers } = request
 
     if (headers.signature === undefined) {
-      return new Promise((resolve, reject) => resolve(""))
+      throw createError(401, 'Request is missing signature header', { fromActor, url, method })
     }
 
     const signature = signatureParser.parse({ url, method, headers })
