@@ -361,14 +361,20 @@ export default class ActivityPubSystem {
 
     const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
+    if (activityType === 'Delete') {
+      if (!await actorStore.inbox.hasPostsFrom(activityActor)) {
+        this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
+        return
+      }
+    }
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && autoApproveFollow) {
+    if (activityType === 'Follow' && autoApproveFollow && (moderationState !== BLOCKED)) {
       this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
-    } else if (moderationState === BLOCKED) {
+    } if (moderationState === BLOCKED) {
       this.log.warn({ activityId: activity.id }, 'Blocking activity due to moderation settings')
       // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
@@ -411,9 +417,11 @@ export default class ActivityPubSystem {
         const object = await response.json()
         // We check that the activity actor is set elsewhere
         await this.storeObject(fromActor, object, activity.actor as string)
-      } else if (typeof activity.object === 'object') {
+      } if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+      } else {
+        throw new Error(`Unable to load actvity object for ${activityId}. Got ${activity.object as string}`)
       }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
