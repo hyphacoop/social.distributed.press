@@ -417,11 +417,11 @@ export default class ActivityPubSystem {
         const object = await response.json()
         // We check that the activity actor is set elsewhere
         await this.storeObject(fromActor, object, activity.actor as string)
-      } if (typeof activity.object === 'object') {
+      } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
       } else {
-        throw new Error(`Unable to load actvity object for ${activityId}. Got ${activity.object as string}`)
+        throw new Error(`Unable to load actvity object for ${activityId}.`)
       }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
