@@ -216,9 +216,7 @@ test('ActivityPubSystem - List replies', async t => {
 })
 
 test('ActivityPubSystem - Undo activity', async t => {
-  const store = newStore()
-  const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  const { store, aps } = setupActivityPubSystem()
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
