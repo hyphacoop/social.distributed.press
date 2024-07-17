@@ -3,7 +3,7 @@ import { APActivity } from 'activitypub-types'
 import createError from 'http-errors'
 import { Mutex } from 'async-mutex'
 
-export const LATEST_VERSON = '2'
+export const LATEST_VERSION = '2'
 
 // Index is separated by `!`, when we want to iterate over db, set gt to this
 const START_NON_INDEX_KEYS = String.fromCharCode('!'.charCodeAt(0) + 1)
@@ -122,7 +122,7 @@ export class ActivityStore {
           await this.addToIndex(activity)
         }
 
-        await this.indexesDB.put('version', LATEST_VERSON)
+        await this.indexesDB.put('version', LATEST_VERSION)
         this.hasMigrated = true
 
         // Remove deletes from authors without other info

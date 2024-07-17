@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
-import { ActivityStore, LATEST_VERSON } from './ActivityStore'
+import { ActivityStore, LATEST_VERSION } from './ActivityStore'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
 
@@ -99,7 +99,7 @@ test('ActivityStore - migrate store', async t => {
   await store.migrate()
 
   const version = await store.getVersion()
-  t.deepEqual(version, LATEST_VERSON, 'after migrating, store at latest version')
+  t.deepEqual(version, LATEST_VERSION, 'after migrating, store at latest version')
 
   const activites = await store.list()
 

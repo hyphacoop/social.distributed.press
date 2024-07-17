@@ -374,7 +374,7 @@ export default class ActivityPubSystem {
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
-    } if (moderationState === BLOCKED) {
+    } else if (moderationState === BLOCKED) {
       this.log.warn({ activityId: activity.id }, 'Blocking activity due to moderation settings')
       // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
@@ -421,7 +421,7 @@ export default class ActivityPubSystem {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
       } else {
-        throw new Error(`Unable to load actvity object for ${activityId}.`)
+        throw new Error(`Unable to load activity object for ${activityId}.`)
       }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
