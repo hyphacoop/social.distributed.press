@@ -23,7 +23,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    let allowed : boolean
+    let allowed: boolean
 
     try {
       allowed = await apsystem.hasPermissionActorRequest(actor, request)

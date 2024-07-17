@@ -11,29 +11,29 @@ export class Announcements {
   apsystem: ActivityPubSystem
   publicURL: string
 
-  constructor(apsystem: ActivityPubSystem, publicURL: string) {
+  constructor (apsystem: ActivityPubSystem, publicURL: string) {
     this.apsystem = apsystem
     this.publicURL = publicURL
   }
 
-  get actorUrl(): string {
+  get actorUrl (): string {
     return `${this.publicURL}/v1/${this.mention}/`
   }
 
-  get outboxUrl(): string {
+  get outboxUrl (): string {
     return `${this.actorUrl}outbox`
   }
 
-  get mention(): string {
+  get mention (): string {
     const url = new URL(this.publicURL)
     return `@announcements@${url.hostname}`
   }
 
-  get store(): ActorStore {
+  get store (): ActorStore {
     return this.apsystem.store.forActor(this.mention)
   }
 
-  async getActor(): Promise<APActorNonStandard> {
+  async getActor (): Promise<APActorNonStandard> {
     const actorInfo = await this.store.getInfo()
     const url = new URL(this.actorUrl).hostname
     return {
@@ -61,7 +61,7 @@ export class Announcements {
     }
   }
 
-  async init(): Promise<void> {
+  async init (): Promise<void> {
     const actorUrl = this.actorUrl
     const actor = this.store
 
@@ -91,7 +91,7 @@ export class Announcements {
     }
   }
 
-  async cleanBacklog(): Promise<number> {
+  async cleanBacklog (): Promise<number> {
     // Remove all queued activites
     const items = await this.store.inbox.list(0, Infinity)
 
@@ -110,7 +110,7 @@ export class Announcements {
     return items.length
   }
 
-  async announce(actor: string): Promise<void> {
+  async announce (actor: string): Promise<void> {
     const actorUrl = await this.apsystem.mentionToActor(actor)
     const published = new Date().toUTCString()
     const to = ['https://www.w3.org/ns/activitystreams#Public']
@@ -145,7 +145,7 @@ export class Announcements {
     await this.apsystem.notifyFollowers(this.mention, activity)
   }
 
-  async getOutbox(): Promise<APOrderedCollection> {
+  async getOutbox (): Promise<APOrderedCollection> {
     const actor = this.store
     const activities = await actor.outbox.list()
     const orderedItems = activities

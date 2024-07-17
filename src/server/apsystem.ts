@@ -361,9 +361,15 @@ export default class ActivityPubSystem {
 
     const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
+    if (activityType === 'Delete') {
+      if (!await actorStore.inbox.hasPostsFrom(activityActor)) {
+        this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
+        return
+      }
+    }
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && autoApproveFollow) {
+    if (activityType === 'Follow' && autoApproveFollow && (moderationState !== BLOCKED)) {
       this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
@@ -414,6 +420,8 @@ export default class ActivityPubSystem {
       } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+      } else {
+        throw new Error(`Unable to load activity object for ${activityId}.`)
       }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)

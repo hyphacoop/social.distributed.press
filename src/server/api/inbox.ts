@@ -139,8 +139,10 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
       to = await apsystem.mentionToActor(submittedActorMention)
     }
+    const replyURL = decodeURIComponent(inReplyTo)
+    request.log.info({ replyURL }, 'fetching replies for post')
 
-    const collection = await apsystem.repliesCollection(actor, decodeURIComponent(inReplyTo), to)
+    const collection = await apsystem.repliesCollection(actor, replyURL, to)
 
     return await reply.send(collection)
   })
