@@ -113,18 +113,26 @@ export class APObjectStore {
       }
       const object = await this.get(url)
 
+      const recipients: string[] = []
+
       if (Array.isArray(object.to)) {
-        if (!object.to.includes(PUBLIC_TO_URL)) {
-          if ((to === undefined) || !object.to.includes(to)) {
-            continue
-          }
-        }
+        recipients.push(...object.to as string[])
       } else if (typeof object.to === 'string') {
-        if (object.to !== PUBLIC_TO_URL) {
-          if (object.to !== to) continue
+        recipients.push(object.to)
+      }
+
+      if (Array.isArray(object.cc)) {
+        recipients.push(...object.cc as string[])
+      } else if (typeof object.cc === 'string') {
+        recipients.push(object.cc)
+      }
+
+      if (!recipients.includes(PUBLIC_TO_URL)) {
+        if ((to === undefined) || !recipients.includes(to)) {
+          continue
         }
       }
-      // TODO: Should we handle `to` being an object?
+
       items.push(object)
     }
 
