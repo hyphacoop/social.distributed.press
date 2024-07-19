@@ -15,6 +15,18 @@ function newStore (): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
+// Helper function to setup the ActivityPubSystem
+function setupActivityPubSystem (): {
+  store: Store
+  aps: ActivityPubSystem
+  hookSystem: HookSystem
+} {
+  const store = newStore()
+  const hookSystem = new HookSystem(store, mockFetch)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  return { store, aps, hookSystem }
+}
+
 // Create some mock dependencies
 const mockStore = {
   admins: { matches: () => {} },
@@ -31,7 +43,6 @@ const mockModCheck = new ModerationChecker(mockStore)
 const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   return new Response(JSON.stringify({}), { status: 200 })
 }
-const mockHooks = new HookSystem(mockStore, mockFetch)
 
 const mockServer = fastify({ logger: true })
 
@@ -48,7 +59,7 @@ const mockRequest = {
 } as unknown as FastifyRequest
 
 // Initialize the main class to test
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
+const { aps } = setupActivityPubSystem()
 
 test.beforeEach(() => {
   // Restore stubs before setting them up again
@@ -183,9 +194,7 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 })
 
 test('ActivityPubSystem - List replies', async t => {
-  const store = newStore()
-  const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  const { store, aps } = setupActivityPubSystem()
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
