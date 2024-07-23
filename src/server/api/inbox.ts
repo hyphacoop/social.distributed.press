@@ -139,7 +139,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
       to = await apsystem.mentionToActor(submittedActorMention)
     }
-    const replyURL = decodeURIComponent(inReplyTo)
+    const replyURL = inReplyTo.includes('%') ? decodeURIComponent(inReplyTo) : atob(inReplyTo)
     request.log.info({ replyURL }, 'fetching replies for post')
 
     const collection = await apsystem.repliesCollection(actor, replyURL, to)
@@ -174,7 +174,10 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
     }
-    await apsystem.rejectActivity(actor, id)
+
+    const idURL = id.includes('%') ? decodeURIComponent(id) : atob(id)
+
+    await apsystem.rejectActivity(actor, idURL)
     return await reply.send('ok')
   })
 
@@ -205,7 +208,9 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       return await reply.code(403).send('Not Allowed')
     }
 
-    await apsystem.approveActivity(actor, id)
+    const idURL = id.includes('%') ? decodeURIComponent(id) : atob(id)
+
+    await apsystem.approveActivity(actor, idURL)
 
     return await reply.send('ok')
   })
