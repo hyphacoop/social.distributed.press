@@ -44,14 +44,14 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const totalItems = await inbox.count()
 
     if (limit === undefined) {
-      const page: APOrderedCollectionPage = {
+      const inbox: APOrderedCollection = {
         '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'OrderedCollectionPage',
+        type: 'OrderedCollection',
         totalItems,
         id: `${cfg.publicURL}${request.url}`,
-        next: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
+        first: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
       }
-      return await reply.send(page)
+      return await reply.send(inbox)
     }
     skip ??= 0
 
