@@ -44,27 +44,28 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const totalItems = await inbox.count()
 
     if (limit === undefined) {
-      const page: APOrderedCollectionPage = {
+      const inbox: APOrderedCollection = {
         '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'OrderedCollectionPage',
+        type: 'OrderedCollection',
         totalItems,
         id: `${cfg.publicURL}${request.url}`,
-        next: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
+        first: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
       }
-      return await reply.send(page)
+      return await reply.send(inbox)
     }
     skip ??= 0
 
     const hasPrev = skip > limit
     const prev = hasPrev ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip - limit}&limit=${limit}` : undefined
     const orderedItems = await inbox.list(skip, limit)
+    const next = (orderedItems.length >= limit) ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}` : undefined
     const orderedCollectionPage: APOrderedCollectionPage = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'OrderedCollectionPage',
       totalItems,
       id: `${cfg.publicURL}${request.url}`,
       prev,
-      next: `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}`,
+      next,
       orderedItems
     }
     return await reply.send(orderedCollectionPage)
