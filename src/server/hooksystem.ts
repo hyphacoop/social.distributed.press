@@ -81,7 +81,8 @@ export default class HookSystem {
     const response = await this.fetch(request.url, {
       method: request.method,
       headers: request.headers,
-      body: request.body
+      body: request.body,
+      signal: AbortSignal.timeout(3000)
     })
 
     return response.ok

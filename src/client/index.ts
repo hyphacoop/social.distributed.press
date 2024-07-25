@@ -68,6 +68,7 @@ export class SocialInboxClient {
     const { publicKeyId, ...keypairWithoutId } = this.keypair
 
     const response = await this.fetch(url, {
+      signal: AbortSignal.timeout(3000),
       method,
       headers: {
         'Content-Type': finalContentType

@@ -183,6 +183,7 @@ export default class ActivityPubSystem {
     return await this.fetch(url, {
       method,
       body,
+      signal: AbortSignal.timeout(3000),
       headers: new Headers({
         ...headers,
         signature,
@@ -226,6 +227,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
     }
@@ -261,6 +263,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       const response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
 
@@ -288,7 +291,7 @@ export default class ActivityPubSystem {
     const { username, domain } = parseMention(mention)
     let webfingerURL = `https://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
 
-    let response = await this.fetch(webfingerURL)
+    let response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
 
     if (!response.ok && response.status === 404) {
       const hostMetaURL = `https://${domain}/.well-known/host-meta`
@@ -313,7 +316,7 @@ export default class ActivityPubSystem {
       }
 
       webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
-      response = await this.fetch(webfingerURL)
+      response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
     }
 
     if (!response.ok) {
