@@ -422,7 +422,7 @@ export default class ActivityPubSystem {
         await this.storeObject(fromActor, object, activity.actor as string)
 
         const interactedActorMention = await this.actorToMention(activity.actor as string, fromActor)
-        actorStore.interacted.add([interactedActorMention])
+        await actorStore.interacted.add([interactedActorMention])
       } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
