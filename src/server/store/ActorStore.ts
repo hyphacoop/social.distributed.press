@@ -14,6 +14,7 @@ export class ActorStore {
   blocklist: AccountListStore
   allowlist: AccountListStore
   followers: AccountListStore
+  interacted: AccountListStore
   hooks: HookStore
 
   constructor (db: AbstractLevel<any, string, any>) {
@@ -39,6 +40,9 @@ export class ActorStore {
 
     const followerDb = this.db.sublevel('followers', { valueEncoding: 'json' })
     this.followers = new AccountListStore(followerDb)
+
+    const interactedDb = this.db.sublevel('interacted', { valueEncoding: 'json' })
+    this.interacted = new AccountListStore(interactedDb)
 
     const hooksDb = this.db.sublevel('hooks', { valueEncoding: 'json' })
     this.hooks = new HookStore(hooksDb)
