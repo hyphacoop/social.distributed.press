@@ -47,10 +47,10 @@ export const interactedRoutes = (cfg: APIConfig, store: Store, apsystem: Activit
 
     return await reply.send({
       '@context': 'https://www.w3.org/ns/activitystreams',
-      type: 'OrderedCollection',
+      type: 'Collection',
       id: `${cfg.publicURL}${request.url}`,
-      items,
-      totalItems
+      totalItems,
+      items
     })
   })
 }
