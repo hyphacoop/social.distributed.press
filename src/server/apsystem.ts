@@ -472,7 +472,7 @@ export default class ActivityPubSystem {
         return await this.sendTo(actorURL, fromActor, activity)
       } catch (e) {
         // TODO: Remove deleted accounts
-        console.error(`Unable to notify actor ${fromActor}`, e)
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
       }
     }))
   }
@@ -486,7 +486,7 @@ export default class ActivityPubSystem {
         return await this.sendTo(actorURL, fromActor, activity)
       } catch (e) {
         // TODO: Remove deleted accounts?
-        console.error(`Unable to notify actor ${fromActor}`, e)
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
       }
     }))
   }
