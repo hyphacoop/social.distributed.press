@@ -9,6 +9,7 @@ import HookSystem from './hooksystem'
 import signatureParser from 'activitypub-http-signatures'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
+import { MockFetch } from './fixtures/mockFetch.js'
 
 // Helper function to create a new Store instance
 function newStore (): Store {
@@ -219,6 +220,42 @@ test('ActivityPubSystem - List replies', async t => {
   const collection = await aps.repliesCollection(actorMention, inReplyTo)
 
   t.deepEqual(collection.items, [activity.object])
+})
+
+test('ActivityPubSystem - List likes', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockServer.log,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const object = 'https://example.com/note2'
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Like',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object,
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  mockFetch.mockActor(actorMention)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.likesCollection(actorMention, object)
+
+  t.deepEqual(collection.items, [activity])
 })
 
 // After all tests, restore all sinon mocks
