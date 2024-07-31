@@ -3,7 +3,11 @@ import { APActivity, APObject } from 'activitypub-types'
 import createError from 'http-errors'
 import { Mutex } from 'async-mutex'
 
-export const LATEST_VERSION = '2'
+export const VERSION_0 = '0'
+export const VERSION_1 = '1'
+export const VERSION_2 = '2'
+export const VERSION_3 = '3'
+export const LATEST_VERSION = VERSION_3
 
 export interface ListParameters {
   skip?: number
@@ -139,7 +143,7 @@ export class ActivityStore {
     await this.migrationMutex.runExclusive(async () => {
       if (this.hasMigrated) return
       const version = await this.getVersion()
-      if (version === '0' || version === '1') {
+      if (version === VERSION_0 || version === VERSION_1) {
         // Clear old published index
         await this.indexesDB.clear()
         // Ensure each activity has a published field
@@ -151,7 +155,6 @@ export class ActivityStore {
           await this.addToIndex(activity)
         }
 
-        await this.indexesDB.put('version', LATEST_VERSION)
         this.hasMigrated = true
 
         // Remove deletes from authors without other info
@@ -161,6 +164,21 @@ export class ActivityStore {
           }
         }
       }
+
+      if (version !== VERSION_3) {
+        for await (const activity of this.db.values({ gt: START_NON_INDEX_KEYS })) {
+          if (activity.object !== undefined && activity.published !== undefined) {
+            const publishedString = new Date(activity.published).toISOString()
+            await this.objectIndexFor(activity.object as APObject | string)
+              .sublevel(activity.type as string)
+              .sublevel(publishedString, { valueEncoding: 'json' })
+              .put(activity.id, activity.id)
+          }
+        }
+      }
+
+      await this.indexesDB.put('version', LATEST_VERSION)
+
       this.hasMigrated = true
     })
   }
