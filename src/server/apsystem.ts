@@ -544,7 +544,7 @@ export default class ActivityPubSystem {
 
   async repliesCollection (fromActor: string, inReplyTo: string, to?: string): Promise<APCollection> {
     const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo, to })
-    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${encodeURIComponent(inReplyTo)}`)
+    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${btoa(inReplyTo)}`)
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -552,6 +552,40 @@ export default class ActivityPubSystem {
       id,
       items,
       totalItems: items.length
+    }
+  }
+
+  // TODO: paging?
+  async likesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
+    const activities = await this.store.forActor(fromActor)
+      .inbox.list({ limit: Infinity, type: 'Like', object })
+    const id = this.makeURL(`/v1/${fromActor}/inbox/likes/${btoa(object)}`)
+
+    const items = countOnly ? undefined : activities
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems: activities.length
+    }
+  }
+
+  // TODO: paging?
+  async sharesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
+    const activities = await this.store.forActor(fromActor)
+      .inbox.list({ limit: Infinity, type: 'Announce', object })
+    const id = this.makeURL(`/v1/${fromActor}/inbox/shares/${btoa(object)}`)
+
+    const items = countOnly ? undefined : activities
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems: activities.length
     }
   }
 

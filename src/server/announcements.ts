@@ -93,7 +93,7 @@ export class Announcements {
 
   async cleanBacklog (): Promise<number> {
     // Remove all queued activites
-    const items = await this.store.inbox.list(0, Infinity)
+    const items = await this.store.inbox.list({ skip: 0, limit: Infinity })
 
     await Promise.all(items.map(async (item) => {
       const { id, type } = item
