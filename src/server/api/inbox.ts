@@ -167,12 +167,17 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor, object } = request.params
 
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    let allowed = false
+
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      allowed = submittedActorMention === actor
+    }
 
     const objectURL = object.includes('%') ? decodeURIComponent(object) : atob(object)
     request.log.info({ objectURL }, 'fetching likes for post')
 
-    const collection = await apsystem.likesCollection(actor, objectURL, allowed)
+    const collection = await apsystem.likesCollection(actor, objectURL, !allowed)
 
     return await reply.send(collection)
   })
@@ -196,12 +201,17 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
   }, async (request, reply) => {
     const { actor, object } = request.params
 
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    let allowed = false
+
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      allowed = submittedActorMention === actor
+    }
 
     const objectURL = object.includes('%') ? decodeURIComponent(object) : atob(object)
     request.log.info({ objectURL }, 'fetching shares for post')
 
-    const collection = await apsystem.sharesCollection(actor, objectURL, allowed)
+    const collection = await apsystem.sharesCollection(actor, objectURL, !allowed)
 
     return await reply.send(collection)
   })
