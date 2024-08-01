@@ -15,6 +15,18 @@ function newStore (): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
+// Helper function to setup the ActivityPubSystem
+function setupActivityPubSystem (): {
+  store: Store
+  aps: ActivityPubSystem
+  hookSystem: HookSystem
+} {
+  const store = newStore()
+  const hookSystem = new HookSystem(store, mockFetch)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  return { store, aps, hookSystem }
+}
+
 // Create some mock dependencies
 const mockStore = {
   admins: { matches: () => { } },
@@ -31,7 +43,6 @@ const mockModCheck = new ModerationChecker(mockStore)
 const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   return new Response(JSON.stringify({}), { status: 200 })
 }
-const mockHooks = new HookSystem(mockStore, mockFetch)
 
 const mockServer = fastify({ logger: true })
 
@@ -48,7 +59,7 @@ const mockRequest = {
 } as unknown as FastifyRequest
 
 // Initialize the main class to test
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
+const { aps } = setupActivityPubSystem()
 
 test.beforeEach(() => {
   // Restore stubs before setting them up again
@@ -183,9 +194,7 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 })
 
 test('ActivityPubSystem - List replies', async t => {
-  const store = newStore()
-  const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  const { store, aps } = setupActivityPubSystem()
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
@@ -218,6 +227,63 @@ test('ActivityPubSystem - List replies', async t => {
 
   const collection = await aps.repliesCollection(actorMention, inReplyTo)
 
+  t.deepEqual(collection.items, [activity.object])
+})
+
+test('ActivityPubSystem - Undo activity', async t => {
+  const { store, aps } = setupActivityPubSystem()
+
+  const actorMention = '@user1@example.com'
+  const inReplyTo = 'https://example.com/note2'
+
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Create',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object: {
+      type: 'Note',
+      published: new Date().toISOString(),
+      content: 'Hello world',
+      id: 'https://example.com/note1',
+      inReplyTo,
+      attributedTo: 'https://example.com/user1'
+    },
+    id: 'https://example.com/activity1'
+  }
+
+  const undoActivity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Undo',
+    actor: 'https://example.com/user1',
+    object: {
+      id: activity.id,
+      type: activity.type
+    },
+    id: 'https://example.com/undo1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  // Log to verify the activity is in the store
+  const storedActivity = await store.forActor(actorMention).inbox.get(activity.id as string)
+  console.log('Stored activity:', storedActivity)
+
+  t.truthy(storedActivity, 'The activity is stored successfully')
+
+  // Add Undo activity
+  await store.forActor(actorMention).inbox.add(undoActivity)
+  await aps.approveActivity(actorMention, undoActivity.id as string)
+
+  const storedUndoActivity = await store.forActor(actorMention).inbox.get(undoActivity.id as string)
+  console.log('Stored undo activity:', storedUndoActivity)
+
+  t.truthy(storedUndoActivity, 'The undo activity is stored successfully')
+
+  // Activity is undone
+  const collection = await aps.repliesCollection(actorMention, inReplyTo)
   t.deepEqual(collection.items, [activity.object])
 })
 
