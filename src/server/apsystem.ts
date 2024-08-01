@@ -427,13 +427,13 @@ export default class ActivityPubSystem {
         throw new Error(`Unable to load activity object for ${activityId}.`)
       }
 
-      if (activity.actor !== undefined && typeof activity.actor === 'string') {
-        const interactedActorMention = await this.actorToMention(activity.actor, fromActor)
-        await actorStore.interacted.add([interactedActorMention])
-      }
-
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
+    }
+
+    if (activity.actor !== undefined && typeof activity.actor === 'string') {
+      const interactedActorMention = await this.actorToMention(activity.actor, fromActor)
+      await actorStore.interacted.add([interactedActorMention])
     }
   }
 
