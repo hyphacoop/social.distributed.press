@@ -542,7 +542,6 @@ export default class ActivityPubSystem {
     const webmention = await this.actorToMention(followerURL, fromActor)
 
     await this.store.forActor(fromActor).followers.add([webmention])
-    await this.store.forActor(fromActor).interacted.add([webmention])
   }
 
   async rejectFollow (fromActor: string, followActivity: APActivity): Promise<void> {
