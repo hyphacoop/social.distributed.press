@@ -1,9 +1,20 @@
 import { AbstractLevel } from 'abstract-level'
-import { APActivity } from 'activitypub-types'
+import { APActivity, APObject } from 'activitypub-types'
 import createError from 'http-errors'
 import { Mutex } from 'async-mutex'
 
-export const LATEST_VERSION = '2'
+export const VERSION_0 = '0'
+export const VERSION_1 = '1'
+export const VERSION_2 = '2'
+export const VERSION_3 = '3'
+export const LATEST_VERSION = VERSION_3
+
+export interface ListParameters {
+  skip?: number
+  limit?: number
+  object?: string
+  type?: string
+}
 
 // Index is separated by `!`, when we want to iterate over db, set gt to this
 const START_NON_INDEX_KEYS = String.fromCharCode('!'.charCodeAt(0) + 1)
@@ -31,6 +42,21 @@ export class ActivityStore {
     return this.indexesDB
       .sublevel('actor')
       .sublevel(actor, { valueEncoding: 'json' })
+  }
+
+  objectIndexFor (object: APObject | string): AbstractLevel<any, string, any> {
+    let url = object
+    if (typeof url === 'undefined') throw createError(400, 'expected Activity to contain an object field.')
+    if (typeof url === 'string') {
+      // good to go
+    } else if (typeof url.id === 'string') {
+      url = url.id
+    } else {
+      throw createError(400, 'Expected activity to contain object')
+    }
+
+    return this.indexesDB.sublevel('object')
+      .sublevel(url, { valueEncoding: 'json' })
   }
 
   urlToKey (url: string): string {
@@ -67,6 +93,13 @@ export class ActivityStore {
 
     if (typeof activity.actor === 'string') {
       await this.actorIndexFor(activity.actor)
+        .sublevel(publishedString, { valueEncoding: 'json' })
+        .put(id, id)
+    }
+
+    if (typeof activity.object !== 'undefined') {
+      await this.objectIndexFor(activity.object as APObject | string)
+        .sublevel(activity.type as string)
         .sublevel(publishedString, { valueEncoding: 'json' })
         .put(id, id)
     }
@@ -110,7 +143,7 @@ export class ActivityStore {
     await this.migrationMutex.runExclusive(async () => {
       if (this.hasMigrated) return
       const version = await this.getVersion()
-      if (version === '0' || version === '1') {
+      if (version === VERSION_0 || version === VERSION_1) {
         // Clear old published index
         await this.indexesDB.clear()
         // Ensure each activity has a published field
@@ -122,7 +155,6 @@ export class ActivityStore {
           await this.addToIndex(activity)
         }
 
-        await this.indexesDB.put('version', LATEST_VERSION)
         this.hasMigrated = true
 
         // Remove deletes from authors without other info
@@ -132,6 +164,21 @@ export class ActivityStore {
           }
         }
       }
+
+      if (version !== VERSION_3) {
+        for await (const activity of this.db.values({ gt: START_NON_INDEX_KEYS })) {
+          if (activity.object !== undefined && activity.published !== undefined) {
+            const publishedString = new Date(activity.published).toISOString()
+            await this.objectIndexFor(activity.object as APObject | string)
+              .sublevel(activity.type as string)
+              .sublevel(publishedString, { valueEncoding: 'json' })
+              .put(activity.id, activity.id)
+          }
+        }
+      }
+
+      await this.indexesDB.put('version', LATEST_VERSION)
+
       this.hasMigrated = true
     })
   }
@@ -148,11 +195,20 @@ export class ActivityStore {
     return false
   }
 
-  async list (skip: number = 0, limit: number = 32): Promise<APActivity[]> {
+  async list ({ skip = 0, limit = 32, type: activityType, object }: ListParameters = {}): Promise<APActivity[]> {
     await this.migrate()
     const activities: APActivity[] = []
     let skipped = 0
-    for await (const [indexKey, id] of this.publishedIndex.iterator({ limit: limit + skip, reverse: true })) {
+
+    let index = this.publishedIndex
+    if (typeof object !== 'undefined') {
+      if (typeof activityType !== 'undefined') {
+        index = this.objectIndexFor(object).sublevel(activityType, { valueEncoding: 'json' })
+      } else {
+        index = this.objectIndexFor(object)
+      }
+    }
+    for await (const [indexKey, id] of index.iterator({ limit: limit + skip, reverse: true })) {
       if (skipped < skip) {
         skipped++
         continue

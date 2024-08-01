@@ -1,14 +1,14 @@
 import test from 'ava'
 import sinon from 'sinon'
-import fastify from 'fastify'
 import ActivityPubSystem, { FetchLike, DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
-import type { FastifyRequest } from 'fastify'
+import type { FastifyBaseLogger, FastifyRequest } from 'fastify'
 import Store from './store/index.js'
 import { ModerationChecker } from './moderation.js'
 import HookSystem from './hooksystem'
 import signatureParser from 'activitypub-http-signatures'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
+import { MockFetch } from './fixtures/mockFetch.js'
 
 // Helper function to create a new Store instance
 function newStore (): Store {
@@ -33,13 +33,13 @@ const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit
 }
 const mockHooks = new HookSystem(mockStore, mockFetch)
 
-const mockServer = fastify({ logger: true })
-
-sinon.stub(mockServer, 'log').value({
-  info: sinon.fake(),
-  error: sinon.fake(),
-  warn: sinon.fake()
-})
+function noop (): void {
+}
+const mockLog = {
+  info: noop,
+  error: noop,
+  warn: noop
+} as unknown as FastifyBaseLogger
 
 const mockRequest = {
   url: 'http://example.com',
@@ -48,7 +48,7 @@ const mockRequest = {
 } as unknown as FastifyRequest
 
 // Initialize the main class to test
-const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockServer.log)
+const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockLog)
 
 test.beforeEach(() => {
   // Restore stubs before setting them up again
@@ -185,7 +185,7 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 test('ActivityPubSystem - List replies', async t => {
   const store = newStore()
   const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockLog)
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
@@ -219,6 +219,78 @@ test('ActivityPubSystem - List replies', async t => {
   const collection = await aps.repliesCollection(actorMention, inReplyTo)
 
   t.deepEqual(collection.items, [activity.object])
+})
+
+test('ActivityPubSystem - List likes', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const object = 'https://example.com/note2'
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Like',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object,
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  mockFetch.mockActor(actorMention)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.likesCollection(actorMention, object)
+
+  t.deepEqual(collection.items, [activity])
+})
+
+test('ActivityPubSystem - List shares', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const object = 'https://example.com/note2'
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Announce',
+    published: new Date().toISOString(),
+    actor: 'https://example.com/user1',
+    object,
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  mockFetch.mockActor(actorMention)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.sharesCollection(actorMention, object)
+
+  t.deepEqual(collection.items, [activity])
 })
 
 // After all tests, restore all sinon mocks
