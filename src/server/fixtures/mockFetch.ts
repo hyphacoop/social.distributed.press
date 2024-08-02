@@ -1,4 +1,4 @@
-import { parseMention } from '../apsystem'
+import { parseMention } from '../apsystem.js'
 
 export class MockFetch extends Map<string, BodyInit> {
   history: string[]
