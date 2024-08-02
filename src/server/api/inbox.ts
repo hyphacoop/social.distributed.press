@@ -57,7 +57,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const hasPrev = skip > limit
     const prev = hasPrev ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip - limit}&limit=${limit}` : undefined
-    const orderedItems = await inbox.list(skip, limit)
+    const orderedItems = await inbox.list({ skip, limit })
     const next = (orderedItems.length >= limit) ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}` : undefined
     const orderedCollectionPage: APOrderedCollectionPage = {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -148,6 +148,73 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     return await reply.send(collection)
   })
 
+  // TODO: Paging?
+  server.get<{
+    Params: {
+      actor: string
+      object: string
+    }
+    Reply: APOrderedCollection | string
+  }>('/:actor/inbox/likes/:object', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        object: Type.String()
+      }),
+      description: 'Likes for a post',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, object } = request.params
+
+    let allowed = false
+
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      allowed = submittedActorMention === actor
+    }
+
+    const objectURL = object.includes('%') ? decodeURIComponent(object) : atob(object)
+    request.log.info({ objectURL }, 'fetching likes for post')
+
+    const collection = await apsystem.likesCollection(actor, objectURL, !allowed)
+
+    return await reply.send(collection)
+  })
+
+  // TODO: Paging?
+  server.get<{
+    Params: {
+      actor: string
+      object: string
+    }
+    Reply: APOrderedCollection | string
+  }>('/:actor/inbox/shares/:object', {
+    schema: {
+      params: Type.Object({
+        actor: Type.String(),
+        object: Type.String()
+      }),
+      description: 'Shares or boosts for a post',
+      tags: ['ActivityPub']
+    }
+  }, async (request, reply) => {
+    const { actor, object } = request.params
+
+    let allowed = false
+
+    if (request.headers.signature !== undefined) {
+      const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
+      allowed = submittedActorMention === actor
+    }
+
+    const objectURL = object.includes('%') ? decodeURIComponent(object) : atob(object)
+    request.log.info({ objectURL }, 'fetching shares for post')
+
+    const collection = await apsystem.sharesCollection(actor, objectURL, !allowed)
+
+    return await reply.send(collection)
+  })
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
   server.delete<{
