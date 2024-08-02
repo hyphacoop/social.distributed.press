@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
-import { APObjectStore, PUBLIC_TO_URL } from './ObjectStore'
+import { APObjectStore, PUBLIC_TO_URL } from './ObjectStore.js'
 import { MemoryLevel } from 'memory-level'
 import { APNote } from 'activitypub-types'
 

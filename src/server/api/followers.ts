@@ -2,8 +2,8 @@ import { APCollection } from 'activitypub-types'
 import { Type } from '@sinclair/typebox'
 import createError from 'http-errors'
 
-import type { APIConfig, FastifyTypebox } from '.'
-import type Store from '../store'
+import type { APIConfig, FastifyTypebox } from './index.js'
+import type Store from '../store/index.js'
 import type ActivityPubSystem from '../apsystem.js'
 
 export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubSystem) => async (server: FastifyTypebox): Promise<void> => {

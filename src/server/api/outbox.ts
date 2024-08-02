@@ -1,8 +1,8 @@
 import { APActivity } from 'activitypub-types'
 import { Type } from '@sinclair/typebox'
 
-import type { APIConfig, FastifyTypebox } from '.'
-import Store from '../store'
+import type { APIConfig, FastifyTypebox } from './index.js'
+import Store from '../store/index.js'
 import type ActivityPubSystem from '../apsystem.js'
 
 // TODO: Add ability to clear outbox items

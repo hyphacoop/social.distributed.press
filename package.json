@@ -11,12 +11,12 @@
     "dist/*"
   ],
   "scripts": {
-    "generate-identity": "ts-node-esm src/scripts/generate-identity.ts",
-    "import-blocklist": "ts-node-esm src/scripts/import-blocklist.ts",
-    "import-admins": "ts-node-esm src/scripts/import-admins.ts",
-    "client-cli": "ts-node-esm src/client/cli.ts",
+    "generate-identity": "node --import=tsimp/import src/scripts/generate-identity.ts",
+    "import-blocklist": "node --import=tsimp/import src/scripts/import-blocklist.ts",
+    "import-admins": "node --import=tsimp/import src/scripts/import-admins.ts",
+    "client-cli": "node --import=tsimp/import src/client/cli.ts",
     "lint": "ts-standard --fix && tsc --noEmit",
-    "dev": "ts-node-esm src/bin.ts run | pino-pretty -c -t",
+    "dev": "node --import=tsimp/import src/bin.ts run | pino-pretty -c -t",
     "start": "node dist/bin.js run | pino-pretty -c -t",
     "prestart": "npm run build",
     "prepublish": "npm run build",
@@ -81,16 +81,16 @@
     "nodemon": "^3.1.4",
     "pino-pretty": "^9.1.1",
     "sinon": "^15.2.0",
-    "ts-node": "^10.9.1",
     "ts-standard": "^12.0.2",
-    "typescript": "^4.9.3"
+    "tsimp": "^2.0.11",
+    "typescript": "^5.4.5"
   },
   "ava": {
     "extensions": {
       "ts": "module"
     },
     "nodeArguments": [
-      "--loader=ts-node/esm",
+      "--import=tsimp/import",
       "--no-warnings"
     ]
   },

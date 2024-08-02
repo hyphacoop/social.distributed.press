@@ -1,5 +1,5 @@
 import test from 'ava'
-import HookSystem from './hooksystem'
+import HookSystem from './hooksystem.js'
 
 test('HookSystem triggers moderationqueued with expected parameters', async (t) => {
   // Mock the fetch API

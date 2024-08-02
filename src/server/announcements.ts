@@ -1,9 +1,9 @@
 import { nanoid } from 'nanoid'
-import ActivityPubSystem from './apsystem'
+import ActivityPubSystem from './apsystem.js'
 import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection } from 'activitypub-types'
-import { ActorStore } from './store/ActorStore'
-import { APActorNonStandard } from '../schemas'
+import { ActorStore } from './store/ActorStore.js'
+import { APActorNonStandard } from '../schemas.js'
 
 const AUTO_APPROVED_TYPES = ['Follow', 'Undo']
 
