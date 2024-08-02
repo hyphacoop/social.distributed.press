@@ -93,6 +93,11 @@ export default class ActivityPubSystem {
   async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
     // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
+
+    if (headers.signature === undefined) {
+      throw createError(401, 'Request is missing signature header', { fromActor, url, method })
+    }
+
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
 
@@ -178,6 +183,7 @@ export default class ActivityPubSystem {
     return await this.fetch(url, {
       method,
       body,
+      signal: AbortSignal.timeout(3000),
       headers: new Headers({
         ...headers,
         signature,
@@ -221,6 +227,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
     }
@@ -256,6 +263,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       const response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
 
@@ -283,7 +291,7 @@ export default class ActivityPubSystem {
     const { username, domain } = parseMention(mention)
     let webfingerURL = `https://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
 
-    let response = await this.fetch(webfingerURL)
+    let response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
 
     if (!response.ok && response.status === 404) {
       const hostMetaURL = `https://${domain}/.well-known/host-meta`
@@ -308,7 +316,7 @@ export default class ActivityPubSystem {
       }
 
       webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
-      response = await this.fetch(webfingerURL)
+      response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
     }
 
     if (!response.ok) {
@@ -354,11 +362,17 @@ export default class ActivityPubSystem {
 
     const { manuallyApprovesFollowers } = await actorStore.getInfo()
 
-    const autoApproveFollow = manuallyApprovesFollowers !== undefined && manuallyApprovesFollowers
+    const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
+    if (activityType === 'Delete') {
+      if (!await actorStore.inbox.hasPostsFrom(activityActor)) {
+        this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
+        return
+      }
+    }
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && autoApproveFollow) {
+    if (activityType === 'Follow' && autoApproveFollow && (moderationState !== BLOCKED)) {
       this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
@@ -409,6 +423,8 @@ export default class ActivityPubSystem {
       } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+      } else {
+        throw new Error(`Unable to load activity object for ${activityId}.`)
       }
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)

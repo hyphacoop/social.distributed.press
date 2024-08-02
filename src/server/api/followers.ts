@@ -1,5 +1,6 @@
 import { APCollection } from 'activitypub-types'
 import { Type } from '@sinclair/typebox'
+import createError from 'http-errors'
 
 import type { APIConfig, FastifyTypebox } from './index.js'
 import type Store from '../store/index.js'
@@ -22,7 +23,18 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
     }
   }, async (request, reply) => {
     const { actor } = request.params
-    const allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    let allowed: boolean
+
+    try {
+      allowed = await apsystem.hasPermissionActorRequest(actor, request)
+    } catch (e) {
+      if (createError.isHttpError(e) && e.name === 'UnauthorizedError') {
+        allowed = false
+      } else {
+        throw e
+      }
+    }
+
     const collection = await apsystem.followersCollection(actor, !allowed)
 
     return await reply.send(collection)

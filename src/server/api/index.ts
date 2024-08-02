@@ -104,6 +104,11 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
   await server.ready()
 
   server.log.info(cfg)
+
+  await server.log.info('Processing announcements inbox backlog')
+  const announcementsProcessed = await apsystem.announcements.cleanBacklog()
+  await server.log.info(`Finished announcements backlog. ${announcementsProcessed} items processed.`)
+
   return server
 }
 

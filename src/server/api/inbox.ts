@@ -44,27 +44,28 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     const totalItems = await inbox.count()
 
     if (limit === undefined) {
-      const page: APOrderedCollectionPage = {
+      const inbox: APOrderedCollection = {
         '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'OrderedCollectionPage',
+        type: 'OrderedCollection',
         totalItems,
         id: `${cfg.publicURL}${request.url}`,
-        next: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
+        first: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
       }
-      return await reply.send(page)
+      return await reply.send(inbox)
     }
     skip ??= 0
 
     const hasPrev = skip > limit
     const prev = hasPrev ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip - limit}&limit=${limit}` : undefined
     const orderedItems = await inbox.list(skip, limit)
+    const next = (orderedItems.length >= limit) ? `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}` : undefined
     const orderedCollectionPage: APOrderedCollectionPage = {
       '@context': 'https://www.w3.org/ns/activitystreams',
       type: 'OrderedCollectionPage',
       totalItems,
       id: `${cfg.publicURL}${request.url}`,
       prev,
-      next: `${cfg.publicURL}/v1/${actor}/inbox?skip=${skip + limit}&limit=${limit}`,
+      next,
       orderedItems
     }
     return await reply.send(orderedCollectionPage)
@@ -139,8 +140,10 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       const submittedActorMention = await apsystem.verifySignedRequest(request, actor)
       to = await apsystem.mentionToActor(submittedActorMention)
     }
+    const replyURL = inReplyTo.includes('%') ? decodeURIComponent(inReplyTo) : atob(inReplyTo)
+    request.log.info({ replyURL }, 'fetching replies for post')
 
-    const collection = await apsystem.repliesCollection(actor, decodeURIComponent(inReplyTo), to)
+    const collection = await apsystem.repliesCollection(actor, replyURL, to)
 
     return await reply.send(collection)
   })
@@ -172,7 +175,10 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
     if (!allowed) {
       return await reply.code(403).send('Not Allowed')
     }
-    await apsystem.rejectActivity(actor, id)
+
+    const idURL = id.includes('%') ? decodeURIComponent(id) : atob(id)
+
+    await apsystem.rejectActivity(actor, idURL)
     return await reply.send('ok')
   })
 
@@ -203,7 +209,9 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       return await reply.code(403).send('Not Allowed')
     }
 
-    await apsystem.approveActivity(actor, id)
+    const idURL = id.includes('%') ? decodeURIComponent(id) : atob(id)
+
+    await apsystem.approveActivity(actor, idURL)
 
     return await reply.send('ok')
   })

@@ -1,6 +1,6 @@
 /* eslint @typescript-eslint/no-non-null-assertion: 0 */
 import test from 'ava'
-import { ActivityStore } from './ActivityStore.js'
+import { ActivityStore, LATEST_VERSION } from './ActivityStore.js'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
 
@@ -28,6 +28,7 @@ test('ActivityStore - add and get activity', async t => {
 
   const retrievedActivity = await store.get(activity.id!)
   t.deepEqual(retrievedActivity, activity)
+  t.deepEqual(await store.count(), 1, 'activity in count')
 })
 
 test('ActivityStore - remove activity', async t => {
@@ -43,6 +44,11 @@ test('ActivityStore - remove activity', async t => {
     instanceOf: Error,
     message: `Activity not found for URL: ${activity.id!}`
   })
+
+  const items = await store.list()
+
+  t.deepEqual(items, [], 'No items left after remove')
+  t.deepEqual(await store.count(), 0, 'count is now 0')
 })
 
 test('ActivityStore - list activities', async t => {
@@ -59,4 +65,43 @@ test('ActivityStore - list activities', async t => {
   const activities = await store.list()
   // Should be newest first
   t.deepEqual(activities, [a2, a1])
+
+  t.deepEqual(await store.count(), activities.length, 'count matches list length')
+})
+
+test('ActivityStore - list activites without dates', async t => {
+  const store = newActivityStore()
+  const id1 = 'b'
+  const id2 = 'a'
+  const a1 = { ...activity, id: id1 }
+  const a2 = { ...activity, id: id2 }
+  delete a1.published
+  delete a2.published
+  await store.add(a1)
+  await store.add(a2)
+
+  const activities = await store.list()
+  // Should be newest first
+  t.deepEqual(activities, [a2, a1])
+  t.deepEqual(await store.count(), activities.length, 'count matches list length')
+})
+
+test('ActivityStore - migrate store', async t => {
+  const store = newActivityStore()
+
+  // TODO: find better ways to simulate pre-migrated db
+  const key = store.urlToKey(activity.id as string)
+  await store.db.put(key, activity)
+
+  const initialVersion = await store.getVersion()
+  t.deepEqual(initialVersion, '0', 'initial version is 0')
+
+  await store.migrate()
+
+  const version = await store.getVersion()
+  t.deepEqual(version, LATEST_VERSION, 'after migrating, store at latest version')
+
+  const activites = await store.list()
+
+  t.deepEqual(activites, [activity], 'Able to list after migration')
 })

@@ -17,13 +17,13 @@ function newStore (): Store {
 
 // Create some mock dependencies
 const mockStore = {
-  admins: { matches: () => {} },
-  blocklist: { matches: () => {} },
+  admins: { matches: () => { } },
+  blocklist: { matches: () => { } },
   forActor: () => ({
-    getInfo: () => {},
-    inbox: { add: () => {}, get: () => {}, remove: () => {} },
-    outbox: { add: () => {} },
-    followers: { list: () => {}, add: () => {}, remove: () => {} }
+    getInfo: () => { },
+    inbox: { add: () => { }, get: () => { }, remove: () => { } },
+    outbox: { add: () => { } },
+    followers: { list: () => { }, add: () => { }, remove: () => { } }
   })
 } as unknown as Store
 
@@ -199,6 +199,12 @@ test('ActivityPubSystem - List replies', async t => {
       type: 'Note',
       published: new Date().toISOString(),
       content: 'Hello world',
+      to: [
+        'https://example.com/user1/followers'
+      ],
+      cc: [
+        'https://www.w3.org/ns/activitystreams#Public'
+      ],
       id: 'https://example.com/note1',
       inReplyTo,
       attributedTo: 'https://example.com/user1'

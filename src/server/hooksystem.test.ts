@@ -8,7 +8,8 @@ test('HookSystem triggers moderationqueued with expected parameters', async (t) 
     t.deepEqual(options, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'Test' })
+      body: JSON.stringify({ type: 'Test' }),
+      signal: AbortSignal.timeout(3000)
     })
     return { ok: true }
   }
@@ -51,7 +52,8 @@ test('HookSystem triggers onapproved with expected parameters', async (t) => {
     t.deepEqual(options, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'TestApproved' })
+      body: JSON.stringify({ type: 'TestApproved' }),
+      signal: AbortSignal.timeout(3000)
     })
     return { ok: true }
   }
@@ -94,7 +96,8 @@ test('HookSystem triggers onrejected with expected parameters', async (t) => {
     t.deepEqual(options, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'TestRejected' })
+      body: JSON.stringify({ type: 'TestRejected' }),
+      signal: AbortSignal.timeout(3000)
     })
     return { ok: true }
   }
