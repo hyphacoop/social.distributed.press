@@ -185,17 +185,26 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 
 test('ActivityPubSystem - List replies', async t => {
   const store = newStore()
-  const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockLog)
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockLog, mockFetch.fetch as FetchLike)
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
   // Sample data for the tests
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Create',
     published: new Date().toISOString(),
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object: {
       type: 'Note',
       published: new Date().toISOString(),
@@ -208,7 +217,7 @@ test('ActivityPubSystem - List replies', async t => {
       ],
       id: 'https://example.com/note1',
       inReplyTo,
-      attributedTo: 'https://example.com/user1'
+      attributedTo: actorUrl
     },
     id: 'https://example.com/activity1'
   }
@@ -237,12 +246,20 @@ test('ActivityPubSystem - List likes', async t => {
 
   const actorMention = '@user1@example.com'
   const object = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
   // Sample data for the tests
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Like',
     published: new Date().toISOString(),
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object,
     id: 'https://example.com/activity1'
   }
@@ -273,19 +290,25 @@ test('ActivityPubSystem - List shares', async t => {
 
   const actorMention = '@user1@example.com'
   const object = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
   // Sample data for the tests
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Announce',
     published: new Date().toISOString(),
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object,
     id: 'https://example.com/activity1'
   }
 
   await store.forActor(actorMention).inbox.add(activity)
-
-  mockFetch.mockActor(actorMention)
 
   await aps.approveActivity(actorMention, activity.id as string)
 
