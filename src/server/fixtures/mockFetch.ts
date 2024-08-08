@@ -46,7 +46,7 @@ export class MockFetch extends Map<string, BodyInit> {
       type: 'Person',
       name: 'Announcements',
       summary: `Subscribe to get notified about new accounts hosted at ${actorUrl}`,
-      preferredUsername: 'announcements',
+      preferredUsername: username,
       following: `${actorUrl}following`,
       followers: `${actorUrl}followers`,
       inbox: `${actorUrl}inbox`,

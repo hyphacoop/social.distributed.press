@@ -426,8 +426,14 @@ export default class ActivityPubSystem {
       } else {
         throw new Error(`Unable to load activity object for ${activityId}.`)
       }
+
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
+    }
+
+    if (activity.actor !== undefined && typeof activity.actor === 'string') {
+      const interactedActorMention = await this.actorToMention(activity.actor, fromActor)
+      await actorStore.interacted.add([interactedActorMention])
     }
   }
 
@@ -466,7 +472,21 @@ export default class ActivityPubSystem {
         return await this.sendTo(actorURL, fromActor, activity)
       } catch (e) {
         // TODO: Remove deleted accounts
-        console.error(`Unable to notify actor ${fromActor}`, e)
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
+      }
+    }))
+  }
+
+  async notifyInteracted (fromActor: string, activity: APActivity): Promise<void> {
+    const interacted = await this.store.forActor(fromActor).interacted.list()
+    // loop through each
+    await Promise.all(interacted.map(async (mention) => {
+      try {
+        const actorURL = await this.mentionToActor(mention)
+        return await this.sendTo(actorURL, fromActor, activity)
+      } catch (e) {
+        // TODO: Remove deleted accounts?
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
       }
     }))
   }

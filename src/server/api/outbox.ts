@@ -37,8 +37,14 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
 
     const activity = request.body
 
+    if (activity.type === 'Delete') {
+      // Make sure everyone we interacted with (including ex-followers) get the Deleted activity
+      await apsystem.notifyInteracted(actor, activity)
+    } else {
     // TODO: logic for notifying specific followers of replies
-    await apsystem.notifyFollowers(actor, activity)
+      await apsystem.notifyFollowers(actor, activity)
+    }
+
     return await reply.send({ message: 'ok' })
   })
   server.get<{
