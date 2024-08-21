@@ -652,10 +652,10 @@ export default class ActivityPubSystem {
     const actorURL = await this.mentionToActor(fromActor)
     const actor = await this.getActor(actorURL, fromActor)
 
-    const { outbox } = actor
+    const { outbox, id } = actor
 
     for await (const activity of this.iterateCollection(fromActor, outbox)) {
-      await this.notifyFollowers(fromActor, activity)
+      await this.sendTo(id as string, fromActor, activity)
     }
   }
 
@@ -774,6 +774,13 @@ export default class ActivityPubSystem {
     const webmention = await this.actorToMention(followerURL, fromActor)
 
     await this.store.forActor(fromActor).followers.add([webmention])
+
+    this.backfillOutbox(fromActor, webmention).catch((e) => {
+      this.log.error(
+        { error: e, fromActor, toActor: webmention },
+        'Unable to backfill follower'
+      )
+    })
   }
 
   async rejectFollow (
