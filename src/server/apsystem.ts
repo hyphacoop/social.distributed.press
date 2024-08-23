@@ -93,6 +93,11 @@ export default class ActivityPubSystem {
   async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
     // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
+
+    if (headers.signature === undefined) {
+      throw createError(401, 'Request is missing signature header', { fromActor, url, method })
+    }
+
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
 
@@ -178,6 +183,7 @@ export default class ActivityPubSystem {
     return await this.fetch(url, {
       method,
       body,
+      signal: AbortSignal.timeout(3000),
       headers: new Headers({
         ...headers,
         signature,
@@ -221,6 +227,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
     }
@@ -256,6 +263,7 @@ export default class ActivityPubSystem {
     } else {
       // Use regular fetch if fromActor is not provided
       const response = await this.fetch(actorURL, {
+        signal: AbortSignal.timeout(3000),
         headers: { Accept: 'application/ld+json' }
       })
 
@@ -283,7 +291,7 @@ export default class ActivityPubSystem {
     const { username, domain } = parseMention(mention)
     let webfingerURL = `https://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
 
-    let response = await this.fetch(webfingerURL)
+    let response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
 
     if (!response.ok && response.status === 404) {
       const hostMetaURL = `https://${domain}/.well-known/host-meta`
@@ -308,7 +316,7 @@ export default class ActivityPubSystem {
       }
 
       webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
-      response = await this.fetch(webfingerURL)
+      response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
     }
 
     if (!response.ok) {
@@ -354,11 +362,17 @@ export default class ActivityPubSystem {
 
     const { manuallyApprovesFollowers } = await actorStore.getInfo()
 
-    const autoApproveFollow = manuallyApprovesFollowers !== undefined && manuallyApprovesFollowers
+    const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
+    if (activityType === 'Delete') {
+      if (!await actorStore.inbox.hasPostsFrom(activityActor)) {
+        this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
+        return
+      }
+    }
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && autoApproveFollow) {
+    if (activityType === 'Follow' && autoApproveFollow && (moderationState !== BLOCKED)) {
       this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
@@ -409,9 +423,17 @@ export default class ActivityPubSystem {
       } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
         await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+      } else {
+        throw new Error(`Unable to load activity object for ${activityId}.`)
       }
+
       // All other items just get approved in the inbox
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
+    }
+
+    if (activity.actor !== undefined && typeof activity.actor === 'string') {
+      const interactedActorMention = await this.actorToMention(activity.actor, fromActor)
+      await actorStore.interacted.add([interactedActorMention])
     }
   }
 
@@ -450,7 +472,21 @@ export default class ActivityPubSystem {
         return await this.sendTo(actorURL, fromActor, activity)
       } catch (e) {
         // TODO: Remove deleted accounts
-        console.error(`Unable to notify actor ${fromActor}`, e)
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
+      }
+    }))
+  }
+
+  async notifyInteracted (fromActor: string, activity: APActivity): Promise<void> {
+    const interacted = await this.store.forActor(fromActor).interacted.list()
+    // loop through each
+    await Promise.all(interacted.map(async (mention) => {
+      try {
+        const actorURL = await this.mentionToActor(mention)
+        return await this.sendTo(actorURL, fromActor, activity)
+      } catch (e) {
+        // TODO: Remove deleted accounts?
+        this.log.error({ actor: fromActor }, 'Unable to notify actor')
       }
     }))
   }
@@ -533,7 +569,7 @@ export default class ActivityPubSystem {
 
   async repliesCollection (fromActor: string, inReplyTo: string, to?: string): Promise<APCollection> {
     const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo, to })
-    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${encodeURIComponent(inReplyTo)}`)
+    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${btoa(inReplyTo)}`)
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -541,6 +577,40 @@ export default class ActivityPubSystem {
       id,
       items,
       totalItems: items.length
+    }
+  }
+
+  // TODO: paging?
+  async likesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
+    const activities = await this.store.forActor(fromActor)
+      .inbox.list({ limit: Infinity, type: 'Like', object })
+    const id = this.makeURL(`/v1/${fromActor}/inbox/likes/${btoa(object)}`)
+
+    const items = countOnly ? undefined : activities
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems: activities.length
+    }
+  }
+
+  // TODO: paging?
+  async sharesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
+    const activities = await this.store.forActor(fromActor)
+      .inbox.list({ limit: Infinity, type: 'Announce', object })
+    const id = this.makeURL(`/v1/${fromActor}/inbox/shares/${btoa(object)}`)
+
+    const items = countOnly ? undefined : activities
+
+    return {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems: activities.length
     }
   }
 

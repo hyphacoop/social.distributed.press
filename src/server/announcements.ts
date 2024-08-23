@@ -1,9 +1,11 @@
 import { nanoid } from 'nanoid'
-import ActivityPubSystem, { DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
+import ActivityPubSystem from './apsystem'
 import { generateKeypair } from 'http-signed-fetch'
 import { APOrderedCollection } from 'activitypub-types'
 import { ActorStore } from './store/ActorStore'
 import { APActorNonStandard } from '../schemas'
+
+const AUTO_APPROVED_TYPES = ['Follow', 'Undo']
 
 export class Announcements {
   apsystem: ActivityPubSystem
@@ -33,6 +35,7 @@ export class Announcements {
 
   async getActor (): Promise<APActorNonStandard> {
     const actorInfo = await this.store.getInfo()
+    const url = new URL(this.actorUrl).hostname
     return {
       '@context': [
         // TODO: I copied this from Mastodon, is this correct?
@@ -41,9 +44,10 @@ export class Announcements {
       ],
       // https://www.w3.org/TR/activitystreams-vocabulary/#actor-types
       id: this.actorUrl,
+      url,
       type: 'Service',
       name: 'Announcements',
-      summary: `Announcements for ${new URL(this.actorUrl).hostname}`,
+      summary: `Subscribe to get notified about new accounts hosted at ${url}`,
       preferredUsername: 'announcements',
       following: `${actorInfo.actorUrl}following`,
       followers: `${actorInfo.actorUrl}followers`,
@@ -66,14 +70,17 @@ export class Announcements {
       if (prev.actorUrl !== actorUrl) {
         await actor.setInfo({
           ...prev,
-          actorUrl
+          publicKeyId: `${actorUrl}#main-key`,
+          actorUrl,
+          announce: false,
+          manuallyApprovesFollowers: false
         })
       }
     } catch {
       const { privateKeyPem, publicKeyPem } = generateKeypair()
       await actor.setInfo({
         actorUrl,
-        publicKeyId: `${actorUrl}#${DEFAULT_PUBLIC_KEY_FIELD}`,
+        publicKeyId: `${actorUrl}#main-key`,
         keypair: {
           privateKeyPem,
           publicKeyPem
@@ -82,6 +89,25 @@ export class Announcements {
         manuallyApprovesFollowers: false
       })
     }
+  }
+
+  async cleanBacklog (): Promise<number> {
+    // Remove all queued activites
+    const items = await this.store.inbox.list({ skip: 0, limit: Infinity })
+
+    await Promise.all(items.map(async (item) => {
+      const { id, type } = item
+      if (AUTO_APPROVED_TYPES.includes(type as string)) {
+        try {
+          await this.apsystem.approveActivity(this.mention, id as string)
+        } catch {
+          // If it fails, that's okay, we can skip it. Probs malformed.
+        }
+      }
+      await this.store.inbox.remove(id as string)
+    }))
+
+    return items.length
   }
 
   async announce (actor: string): Promise<void> {
@@ -124,7 +150,7 @@ export class Announcements {
     const activities = await actor.outbox.list()
     const orderedItems = activities
       .filter(a => a.type !== 'Note')
-    // XXX: maybe `new Date()` doesn't correctly parse possible dates?
+      // XXX: maybe `new Date()` doesn't correctly parse possible dates?
       .map(a => ({ ...a, published: typeof a.published === 'string' ? new Date(a.published) : a.published }))
       .sort((a, b) => +(b.published ?? 0) - +(a.published ?? 0))
       .map(a => a.id)

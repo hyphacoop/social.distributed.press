@@ -1,41 +1,30 @@
 import test from 'ava'
 import sinon from 'sinon'
-import fastify from 'fastify'
-import ActivityPubSystem, { FetchLike, DEFAULT_PUBLIC_KEY_FIELD } from './apsystem'
-import type { FastifyRequest } from 'fastify'
+import ActivityPubSystem, { FetchLike, DEFAULT_PUBLIC_KEY_FIELD, parseMention } from './apsystem'
+import type { FastifyBaseLogger, FastifyRequest } from 'fastify'
 import Store from './store/index.js'
 import { ModerationChecker } from './moderation.js'
 import HookSystem from './hooksystem'
 import signatureParser from 'activitypub-http-signatures'
 import { MemoryLevel } from 'memory-level'
 import { APActivity } from 'activitypub-types'
+import { MockFetch } from './fixtures/mockFetch.js'
+import { generateKeypair } from 'http-signed-fetch'
 
 // Helper function to create a new Store instance
 function newStore (): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
-// Helper function to setup the ActivityPubSystem
-function setupActivityPubSystem (): {
-  store: Store
-  aps: ActivityPubSystem
-  hookSystem: HookSystem
-} {
-  const store = newStore()
-  const hookSystem = new HookSystem(store, mockFetch)
-  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockServer.log)
-  return { store, aps, hookSystem }
-}
-
 // Create some mock dependencies
 const mockStore = {
-  admins: { matches: () => {} },
-  blocklist: { matches: () => {} },
+  admins: { matches: () => { } },
+  blocklist: { matches: () => { } },
   forActor: () => ({
-    getInfo: () => {},
-    inbox: { add: () => {}, get: () => {}, remove: () => {} },
-    outbox: { add: () => {} },
-    followers: { list: () => {}, add: () => {}, remove: () => {} }
+    getInfo: () => { },
+    inbox: { add: () => { }, get: () => { }, remove: () => { } },
+    outbox: { add: () => { } },
+    followers: { list: () => { }, add: () => { }, remove: () => { } }
   })
 } as unknown as Store
 
@@ -43,14 +32,15 @@ const mockModCheck = new ModerationChecker(mockStore)
 const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   return new Response(JSON.stringify({}), { status: 200 })
 }
+const mockHooks = new HookSystem(mockStore, mockFetch)
 
-const mockServer = fastify({ logger: true })
-
-sinon.stub(mockServer, 'log').value({
-  info: sinon.fake(),
-  error: sinon.fake(),
-  warn: sinon.fake()
-})
+function noop (): void {
+}
+const mockLog = {
+  info: noop,
+  error: noop,
+  warn: noop
+} as unknown as FastifyBaseLogger
 
 const mockRequest = {
   url: 'http://example.com',
@@ -59,7 +49,7 @@ const mockRequest = {
 } as unknown as FastifyRequest
 
 // Initialize the main class to test
-const { aps } = setupActivityPubSystem()
+const aps = new ActivityPubSystem('http://localhost', mockStore, mockModCheck, mockHooks, mockLog)
 
 test.beforeEach(() => {
   // Restore stubs before setting them up again
@@ -194,23 +184,40 @@ test('mentionToActor fetches from Webfinger and falls back to Host-Meta on 404',
 })
 
 test('ActivityPubSystem - List replies', async t => {
-  const { store, aps } = setupActivityPubSystem()
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem('http://localhost', store, mockModCheck, hookSystem, mockLog, mockFetch.fetch as FetchLike)
 
   const actorMention = '@user1@example.com'
   const inReplyTo = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
   // Sample data for the tests
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Create',
     published: new Date().toISOString(),
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object: {
       type: 'Note',
       published: new Date().toISOString(),
       content: 'Hello world',
+      to: [
+        'https://example.com/user1/followers'
+      ],
+      cc: [
+        'https://www.w3.org/ns/activitystreams#Public'
+      ],
       id: 'https://example.com/note1',
       inReplyTo,
-      attributedTo: 'https://example.com/user1'
+      attributedTo: actorUrl
     },
     id: 'https://example.com/activity1'
   }
@@ -224,25 +231,132 @@ test('ActivityPubSystem - List replies', async t => {
   t.deepEqual(collection.items, [activity.object])
 })
 
-test('ActivityPubSystem - Undo activity', async t => {
-  const { store, aps } = setupActivityPubSystem()
+test('ActivityPubSystem - List likes', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
 
   const actorMention = '@user1@example.com'
-  const inReplyTo = 'https://example.com/note2'
+  const object = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Like',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object,
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  mockFetch.mockActor(actorMention)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.likesCollection(actorMention, object)
+
+  t.deepEqual(collection.items, [activity])
+})
+
+test('ActivityPubSystem - List shares', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const object = 'https://example.com/note2'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Announce',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object,
+    id: 'https://example.com/activity1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const collection = await aps.sharesCollection(actorMention, object)
+
+  t.deepEqual(collection.items, [activity])
+})
+
+test('ActivityPubSystem - Undo activity', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
 
   // Sample data for the tests
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Create',
     published: new Date().toISOString(),
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object: {
       type: 'Note',
       published: new Date().toISOString(),
       content: 'Hello world',
+      to: [
+        'https://example.com/user1/followers'
+      ],
+      cc: [
+        'https://www.w3.org/ns/activitystreams#Public'
+      ],
       id: 'https://example.com/note1',
-      inReplyTo,
-      attributedTo: 'https://example.com/user1'
+      attributedTo: actorUrl
     },
     id: 'https://example.com/activity1'
   }
@@ -250,7 +364,7 @@ test('ActivityPubSystem - Undo activity', async t => {
   const undoActivity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
     type: 'Undo',
-    actor: 'https://example.com/user1',
+    actor: actorUrl,
     object: {
       id: activity.id,
       type: activity.type
@@ -259,11 +373,10 @@ test('ActivityPubSystem - Undo activity', async t => {
   }
 
   await store.forActor(actorMention).inbox.add(activity)
+
   await aps.approveActivity(actorMention, activity.id as string)
 
-  // Log to verify the activity is in the store
   const storedActivity = await store.forActor(actorMention).inbox.get(activity.id as string)
-  console.log('Stored activity:', storedActivity)
 
   t.truthy(storedActivity, 'The activity is stored successfully')
 
@@ -272,13 +385,103 @@ test('ActivityPubSystem - Undo activity', async t => {
   await aps.approveActivity(actorMention, undoActivity.id as string)
 
   const storedUndoActivity = await store.forActor(actorMention).inbox.get(undoActivity.id as string)
-  console.log('Stored undo activity:', storedUndoActivity)
 
+  // TODO: do we need to keep them around?
   t.truthy(storedUndoActivity, 'The undo activity is stored successfully')
 
-  // Activity is undone
-  const collection = await aps.repliesCollection(actorMention, inReplyTo)
-  t.deepEqual(collection.items, [activity.object])
+  // Activity is undone so it fails to be retrieved
+  await t.throwsAsync(async () => {
+    return await store.forActor(actorMention).inbox.get(activity.id as string)
+  })
+
+})
+
+test('ActivityPubSystem - Interacted store', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const object = 'https://example.com/note1'
+  const authorMention = '@author@example.com'
+  const authorUrl = 'https://example.com/author'
+  // required for signed fetch
+  await store.forActor(authorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl: authorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  mockFetch.mockActor(authorMention)
+  mockFetch.set(object, JSON.stringify({
+    // '@context': 'https://www.w3.org/ns/activitystreams',
+    // type: 'Create',
+    // published: new Date().toISOString(),
+    // actor: 'https://example.com/author',
+    // object: {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Note',
+    published: new Date().toISOString(),
+    content: 'Hello world',
+    to: [
+      'https://example.com/author/followers'
+    ],
+    cc: [
+      'https://www.w3.org/ns/activitystreams#Public'
+    ],
+    id: object,
+    attributedTo: authorUrl
+    // },
+    // id: 'https://example.com/activity1'
+  }))
+  const actorMentions = [
+    '@user1@example1.com',
+    '@user2@example2.com',
+    '@user3@example3.com'
+  ]
+
+  for (let i = 0; i < actorMentions.length; i++) {
+    const actorMention = actorMentions[i]
+    const { username, domain } = parseMention(actorMention)
+    // Sample data for the tests
+    const activity: APActivity = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Like',
+      published: new Date().toISOString(),
+      actor: `https://${domain}/actor/${username}/`,
+      object,
+      id: `https://${domain}/activity${i}`
+    }
+    await store.forActor(authorMention).inbox.add(activity)
+    mockFetch.mockActor(actorMention)
+    await aps.approveActivity(authorMention, activity.id as string)
+  }
+
+  t.deepEqual(await store.forActor(authorMention).interacted.list(), actorMentions)
+
+  for (const actorMention of actorMentions) {
+    const { username, domain } = parseMention(actorMention)
+    mockFetch.set(`https://${domain}/actor/${username}/inbox`, '')
+  }
+  await aps.notifyInteracted(authorMention, {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Delete',
+    published: new Date().toISOString(),
+    actor: authorUrl,
+    object,
+    id: 'https://example.com/activity2'
+  })
+  for (const actorMention of actorMentions) {
+    const { username, domain } = parseMention(actorMention)
+    t.assert(mockFetch.history.includes(`https://${domain}/actor/${username}/inbox`))
+  }
 })
 
 // After all tests, restore all sinon mocks
