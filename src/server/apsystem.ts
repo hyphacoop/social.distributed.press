@@ -286,6 +286,10 @@ export default class ActivityPubSystem {
       prev = page.prev
       items = collectionItems(collection)
 
+      if (items.length === 0) {
+        return
+      }
+
       if (sort === -1) {
         items = items.reverse()
       }
@@ -895,11 +899,11 @@ export default class ActivityPubSystem {
                 const url = await this.mentionToActor(mention)
                 return url
               } catch {
-                // If we can't resolve them just don't show them
+              // If we can't resolve them just don't show them
                 return ''
               }
             })
-            // Filter out failed loads
+          // Filter out failed loads
           )
         ).filter((item) => item.length !== 0)
 
@@ -974,13 +978,16 @@ function isCollectionPage (
 
 function collectionItems (collection: SomeSortOfCollection): ObjectField[] {
   if (isCollection(collection)) {
-    return collection.items ?? []
-  } else if (isCollectionPage(collection)) {
-    return collection.items ?? []
-  } else if (isOrderedCollection(collection)) {
-    return collection.orderedItems ?? []
-  } else if (isOrderedCollectionPage(collection)) {
-    return collection.orderedItems ?? []
+    return (collection as APCollection).items ?? []
+  }
+  if (isCollectionPage(collection)) {
+    return (collection as APCollectionPage).items ?? []
+  }
+  if (isOrderedCollection(collection)) {
+    return (collection as APOrderedCollection).orderedItems ?? []
+  }
+  if (isOrderedCollectionPage(collection)) {
+    return (collection as APOrderedCollectionPage).orderedItems ?? []
   }
   return []
 }
