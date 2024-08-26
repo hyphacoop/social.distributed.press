@@ -317,6 +317,85 @@ test('ActivityPubSystem - List shares', async t => {
   t.deepEqual(collection.items, [activity])
 })
 
+test('ActivityPubSystem - Undo activity', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  // Sample data for the tests
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Create',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object: {
+      type: 'Note',
+      published: new Date().toISOString(),
+      content: 'Hello world',
+      to: [
+        'https://example.com/user1/followers'
+      ],
+      cc: [
+        'https://www.w3.org/ns/activitystreams#Public'
+      ],
+      id: 'https://example.com/note1',
+      attributedTo: actorUrl
+    },
+    id: 'https://example.com/activity1'
+  }
+
+  const undoActivity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Undo',
+    actor: actorUrl,
+    object: {
+      id: activity.id,
+      type: activity.type
+    },
+    id: 'https://example.com/undo1'
+  }
+
+  await store.forActor(actorMention).inbox.add(activity)
+
+  await aps.approveActivity(actorMention, activity.id as string)
+
+  const storedActivity = await store.forActor(actorMention).inbox.get(activity.id as string)
+
+  t.truthy(storedActivity, 'The activity is stored successfully')
+
+  // Add Undo activity
+  await store.forActor(actorMention).inbox.add(undoActivity)
+  await aps.approveActivity(actorMention, undoActivity.id as string)
+
+  const storedUndoActivity = await store.forActor(actorMention).inbox.get(undoActivity.id as string)
+
+  // TODO: do we need to keep them around?
+  t.truthy(storedUndoActivity, 'The undo activity is stored successfully')
+
+  // Activity is undone so it fails to be retrieved
+  await t.throwsAsync(async () => {
+    return await store.forActor(actorMention).inbox.get(activity.id as string)
+  })
+
+})
+
 test('ActivityPubSystem - Interacted store', async t => {
   const store = newStore()
   const mockFetch = new MockFetch()
