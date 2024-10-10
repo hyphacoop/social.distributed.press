@@ -1,4 +1,13 @@
-import type { APActivity, APActor, APCollection, APObject } from 'activitypub-types'
+import type {
+  APActivity,
+  APActor,
+  APCollection,
+  APCollectionPage,
+  APObject,
+  APOrderedCollection,
+  APOrderedCollectionPage,
+  ObjectField
+} from 'activitypub-types'
 import signatureParser from 'activitypub-http-signatures'
 import * as httpDigest from '@digitalbazaar/http-digest-header'
 import { nanoid } from 'nanoid'
@@ -7,17 +16,19 @@ import { XMLParser } from 'fast-xml-parser'
 import createError from 'http-errors'
 
 import type { FastifyRequest, FastifyBaseLogger } from 'fastify'
-import {
-  ModerationChecker,
-  BLOCKED,
-  ALLOWED
-} from './moderation.js'
+import { ModerationChecker, BLOCKED, ALLOWED } from './moderation.js'
 
 import type Store from './store/index.js'
 import { makeSigner } from '../keypair.js'
 import { Announcements } from './announcements.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
+
+type SomeSortOfCollection =
+  | APOrderedCollection
+  | APCollection
+  | APOrderedCollectionPage
+  | APCollectionPage
 
 export interface BasicFetchParams {
   url: string
@@ -70,7 +81,11 @@ export default class ActivityPubSystem {
     return this.publicURL + path
   }
 
-  async hasPermissionActorRequest (forActor: string, request: FastifyRequest, signed: boolean = true): Promise<boolean> {
+  async hasPermissionActorRequest (
+    forActor: string,
+    request: FastifyRequest,
+    signed: boolean = true
+  ): Promise<boolean> {
     const fromActor = signed ? forActor : undefined
     const resolvedActor = await this.verifySignedRequest(request, fromActor)
 
@@ -81,7 +96,9 @@ export default class ActivityPubSystem {
     return await this.store.admins.matches(resolvedActor)
   }
 
-  async hasAdminPermissionForRequest (request: FastifyRequest): Promise<boolean> {
+  async hasAdminPermissionForRequest (
+    request: FastifyRequest
+  ): Promise<boolean> {
     const resolvedActor = await this.verifySignedRequest(request)
 
     if (await this.store.blocklist.matches(resolvedActor)) {
@@ -90,12 +107,19 @@ export default class ActivityPubSystem {
     return await this.store.admins.matches(resolvedActor)
   }
 
-  async verifySignedRequest (request: FastifyRequest, fromActor?: string): Promise<string> {
+  async verifySignedRequest (
+    request: FastifyRequest,
+    fromActor?: string
+  ): Promise<string> {
     // TODO: Fetch and verify Digest header
     const { url, method, headers } = request
 
     if (headers.signature === undefined) {
-      throw createError(401, 'Request is missing signature header', { fromActor, url, method })
+      throw createError(401, 'Request is missing signature header', {
+        fromActor,
+        url,
+        method
+      })
     }
 
     const signature = signatureParser.parse({ url, method, headers })
@@ -117,7 +141,10 @@ export default class ActivityPubSystem {
 
     const publicKey = actor[keyField]
     if (publicKey?.publicKeyPem === undefined) {
-      throw createError(404, `Unable to find public key at ${keyField} in ${keyId}`)
+      throw createError(
+        404,
+        `Unable to find public key at ${keyField} in ${keyId}`
+      )
     }
 
     // Verify the signature
@@ -143,26 +170,23 @@ export default class ActivityPubSystem {
     return await this.actorToMention(fullActorURL, fromActor)
   }
 
-  async signedFetch (fromActor: string, request: BasicFetchParams): Promise<Response> {
+  async signedFetch (
+    fromActor: string,
+    request: BasicFetchParams
+  ): Promise<Response> {
     const fromActorURL = await this.mentionToActor(fromActor)
     // get actor keypair from store
     const { keypair } = await this.store.forActor(fromActor).getInfo()
     const publicKeyId = `${fromActorURL}#${DEFAULT_PUBLIC_KEY_FIELD}`
 
     // set up signed header from url/method/etc
-    const {
-      url,
-      method,
-      headers: initialHeaders,
-      body
-    } = request
+    const { url, method, headers: initialHeaders, body } = request
 
-    const digest = await httpDigest
-      .createHeaderValue({
-        data: body ?? '',
-        algorithm: 'sha256',
-        useMultihash: false
-      })
+    const digest = await httpDigest.createHeaderValue({
+      data: body ?? '',
+      algorithm: 'sha256',
+      useMultihash: false
+    })
 
     const headers = {
       ...initialHeaders,
@@ -172,7 +196,12 @@ export default class ActivityPubSystem {
     }
 
     // Sign data
-    const signer = makeSigner(keypair, publicKeyId, ['(request-target)', 'host', 'date', 'digest'])
+    const signer = makeSigner(keypair, publicKeyId, [
+      '(request-target)',
+      'host',
+      'date',
+      'digest'
+    ])
     const signature = signer.sign({
       url,
       method,
@@ -192,7 +221,90 @@ export default class ActivityPubSystem {
     })
   }
 
-  async sendTo (actorURL: string, fromActor: string, activity: APActivity): Promise<void> {
+  async get (fromActor: string, urlOrObject: ObjectField): Promise<APObject> {
+    if (typeof urlOrObject === 'string') {
+      const response = await this.signedFetch(fromActor, {
+        method: 'GET',
+        url: urlOrObject,
+        headers: {}
+      })
+      if (!response.ok) {
+        throw createError(
+          500,
+          `Cannot fetch data for ${fromActor} at ${urlOrObject}: http status ${response.status} - ${await response.text()}`
+        )
+      }
+
+      return await response.json()
+    } else {
+      return urlOrObject
+    }
+  }
+
+  async * getAll (
+    fromActor: string,
+    items: ObjectField[]
+  ): AsyncIterableIterator<APObject> {
+    for (const itemOrUrl of items) {
+      const item = await this.get(fromActor, itemOrUrl)
+
+      yield item
+    }
+  }
+
+  async * iterateCollection (
+    fromActor: string,
+    collectionOrUrl: ObjectField,
+    { sort = 1 } = {}
+  ): AsyncIterableIterator<APObject> {
+    const collection = (await this.get(fromActor, collectionOrUrl)) as
+      | APCollection
+      | APOrderedCollection
+    let items: ObjectField[] = collectionItems(collection)
+
+    let next, prev
+
+    if (sort === -1) {
+      items = items.reverse()
+      prev = collection.last // Start from the last page if sorting in descending order
+    } else {
+      next = collection.first // Start from the first page if sorting in ascending order
+    }
+    if (items.length !== 0) {
+      for await (const item of this.getAll(fromActor, items)) {
+        yield item
+      }
+    }
+
+    // Iterate through pages in the specified order
+    while ((sort === -1 ? prev : next) !== undefined) {
+      const page = (await this.get(
+        fromActor,
+        (sort === -1 ? prev : next) as string
+      )) as APOrderedCollectionPage | APCollectionPage
+      next = page.next
+      prev = page.prev
+      items = collectionItems(collection)
+
+      if (items.length === 0) {
+        return
+      }
+
+      if (sort === -1) {
+        items = items.reverse()
+      }
+
+      for await (const item of this.getAll(fromActor, items)) {
+        yield item
+      }
+    }
+  }
+
+  async sendTo (
+    actorURL: string,
+    fromActor: string,
+    activity: APActivity
+  ): Promise<void> {
     const method = 'post'
     const url = await this.getInbox(actorURL, fromActor)
 
@@ -210,7 +322,10 @@ export default class ActivityPubSystem {
 
     // Check if response has error and throw one if so
     if (!response.ok) {
-      throw createError(500, `Cannot fetch actor data for ${fromActor}: http status ${response.status} - ${await response.text()}`)
+      throw createError(
+        500,
+        `Cannot fetch actor data for ${fromActor}: http status ${response.status} - ${await response.text()}`
+      )
     }
   }
 
@@ -234,15 +349,20 @@ export default class ActivityPubSystem {
 
     // Check if response is not okay and throw an error
     if (!response.ok) {
-      throw createError(500, `Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`)
+      throw createError(
+        500,
+        `Cannot fetch actor data from ${actorURL}: http status ${response.status} - ${await response.text()}`
+      )
     }
 
     try {
       // TODO: Verify structure?
-      const actor = await response.json() as APActor
+      const actor = (await response.json()) as APActor
       return actor
     } catch (cause) {
-      throw createError(422, `Unable to parse actor JSON at ${actorURL}`, { cause })
+      throw createError(422, `Unable to parse actor JSON at ${actorURL}`, {
+        cause
+      })
     }
   }
 
@@ -268,19 +388,27 @@ export default class ActivityPubSystem {
       })
 
       if (!response.ok) {
-        throw createError(500, `Cannot fetch actor data from ${actorURL}: http status ${response.status}`)
+        throw createError(
+          500,
+          `Cannot fetch actor data from ${actorURL}: http status ${response.status}`
+        )
       }
 
       try {
-        actor = await response.json() as APActor
+        actor = (await response.json()) as APActor
       } catch (cause) {
-        throw createError(422, `Unable to parse actor JSON at ${actorURL}`, { cause })
+        throw createError(422, `Unable to parse actor JSON at ${actorURL}`, {
+          cause
+        })
       }
     }
 
     const { preferredUsername } = actor
     if (preferredUsername === undefined) {
-      throw createError(404, `Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`)
+      throw createError(
+        404,
+        `Could not generate webmention name for actor at ${actorURL}, missing preferredUsername field`
+      )
     }
     const domain = new URL(actorURL).host
 
@@ -291,7 +419,9 @@ export default class ActivityPubSystem {
     const { username, domain } = parseMention(mention)
     let webfingerURL = `https://${domain}/.well-known/webfinger?resource=acct:${username}@${domain}`
 
-    let response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
+    let response = await this.fetch(webfingerURL, {
+      signal: AbortSignal.timeout(3000)
+    })
 
     if (!response.ok && response.status === 404) {
       const hostMetaURL = `https://${domain}/.well-known/host-meta`
@@ -302,42 +432,73 @@ export default class ActivityPubSystem {
       })
 
       if (!hostMetaResponse.ok) {
-        throw createError(404, `Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`)
+        throw createError(
+          404,
+          `Cannot fetch host-meta data from ${hostMetaURL}: http status ${hostMetaResponse.status}`
+        )
       }
 
       const hostMetaText = await hostMetaResponse.text()
       const parser = new XMLParser()
       const hostMeta: HostMeta = parser.parse(hostMetaText)
 
-      const webfingerTemplate = hostMeta.XRD.Link.find((link: HostMetaLink) => link.rel === 'lrdd' && link.template)?.template
+      const webfingerTemplate = hostMeta.XRD.Link.find(
+        (link: HostMetaLink) => link.rel === 'lrdd' && link.template
+      )?.template
 
-      if (typeof webfingerTemplate !== 'string' || webfingerTemplate.length === 0) {
-        throw createError(404, `Webfinger template not found in host-meta data at ${hostMetaURL}`)
+      if (
+        typeof webfingerTemplate !== 'string' ||
+        webfingerTemplate.length === 0
+      ) {
+        throw createError(
+          404,
+          `Webfinger template not found in host-meta data at ${hostMetaURL}`
+        )
       }
 
-      webfingerURL = webfingerTemplate.replace('{uri}', `acct:${username}@${domain}`)
-      response = await this.fetch(webfingerURL, { signal: AbortSignal.timeout(3000) })
+      webfingerURL = webfingerTemplate.replace(
+        '{uri}',
+        `acct:${username}@${domain}`
+      )
+      response = await this.fetch(webfingerURL, {
+        signal: AbortSignal.timeout(3000)
+      })
     }
 
     if (!response.ok) {
-      throw createError(404, `Cannot fetch webmention data from ${webfingerURL}: http status ${response.status}`)
+      throw createError(
+        404,
+        `Cannot fetch webmention data from ${webfingerURL}: http status ${response.status}`
+      )
     }
 
     const { subject, links } = await response.json()
     if (subject !== `acct:${username}@${domain}`) {
-      throw createError(404, `Webmention endpoint returned invalid subject for ${webfingerURL}`)
+      throw createError(
+        404,
+        `Webmention endpoint returned invalid subject for ${webfingerURL}`
+      )
     }
 
     const actorLink = links.find((link: HostMetaLink) => link.rel === 'self')
-    if (typeof actorLink?.href !== 'string' || actorLink.href.trim().length === 0) {
-      throw createError(404, `Unable to find actor link from webmention at ${webfingerURL}`)
+    if (
+      typeof actorLink?.href !== 'string' ||
+      actorLink.href.trim().length === 0
+    ) {
+      throw createError(
+        404,
+        `Unable to find actor link from webmention at ${webfingerURL}`
+      )
     }
 
     return actorLink.href
   }
 
   async ingestActivity (fromActor: string, activity: APActivity): Promise<void> {
-    this.log.info({ type: activity.type, fromActor, id: activity.id }, 'Ingesting activity')
+    this.log.info(
+      { type: activity.type, fromActor, id: activity.id },
+      'Ingesting activity'
+    )
 
     const activityId = activity.id
 
@@ -362,30 +523,50 @@ export default class ActivityPubSystem {
 
     const { manuallyApprovesFollowers } = await actorStore.getInfo()
 
-    const autoApproveFollow = manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
+    const autoApproveFollow =
+      manuallyApprovesFollowers !== undefined && !manuallyApprovesFollowers
 
     if (activityType === 'Delete') {
-      if (!await actorStore.inbox.hasPostsFrom(activityActor)) {
-        this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
+      if (!(await actorStore.inbox.hasPostsFrom(activityActor))) {
+        this.log.warn(
+          { fromActor, activityId, activityActor },
+          'Ignoring Delete of unknown actor'
+        )
         return
       }
     }
     await actorStore.inbox.add(activity)
 
-    if (activityType === 'Follow' && autoApproveFollow && (moderationState !== BLOCKED)) {
-      this.log.info({ fromActor, target: activity.object }, 'Auto-approving follow request')
+    if (
+      activityType === 'Follow' &&
+      autoApproveFollow &&
+      moderationState !== BLOCKED
+    ) {
+      this.log.info(
+        { fromActor, target: activity.object },
+        'Auto-approving follow request'
+      )
       await this.approveActivity(fromActor, activityId)
     } else if (activityType === 'Undo') {
       await this.performUndo(fromActor, activity)
     } else if (moderationState === BLOCKED) {
-      this.log.warn({ activityId: activity.id }, 'Blocking activity due to moderation settings')
+      this.log.warn(
+        { activityId: activity.id },
+        'Blocking activity due to moderation settings'
+      )
       // TODO: Notify of blocks?
       await this.rejectActivity(fromActor, activityId)
     } else if (moderationState === ALLOWED) {
-      this.log.info({ activityId: activity.id }, 'Allowing activity through moderation')
+      this.log.info(
+        { activityId: activity.id },
+        'Allowing activity through moderation'
+      )
       await this.approveActivity(fromActor, activityId)
     } else {
-      this.log.info({ activityId: activity.id }, 'Queueing activity for manual moderation')
+      this.log.info(
+        { activityId: activity.id },
+        'Queueing activity for manual moderation'
+      )
       await this.hookSystem.dispatchModerationQueued(fromActor, activity)
     }
   }
@@ -396,16 +577,22 @@ export default class ActivityPubSystem {
 
     const { type } = activity
 
-    this.log.info({ fromActor, activityId, type: activity.type }, 'Approving activity')
+    this.log.info(
+      { fromActor, activityId, type: activity.type },
+      'Approving activity'
+    )
 
     // TODO: Handle other types + index by post
     if (type === 'Follow') {
-      this.log.debug({ fromActor, target: activity.actor }, 'Processing follow activity')
+      this.log.debug(
+        { fromActor, target: activity.actor },
+        'Processing follow activity'
+      )
       await this.acceptFollow(fromActor, activity)
       await this.hookSystem.dispatchOnApproved(fromActor, activity)
     } else if (type === 'Undo') {
       await this.performUndo(fromActor, activity)
-    } else if ((type === 'Create') || (type === 'Update')) {
+    } else if (type === 'Create' || type === 'Update') {
       if (typeof activity.object === 'string') {
         const response = await this.signedFetch(fromActor, {
           method: 'get',
@@ -415,14 +602,23 @@ export default class ActivityPubSystem {
           }
         })
 
-        if (!response.ok) { throw createError(404, `Unable to load object for activity at ${activity.object}`) }
+        if (!response.ok) {
+          throw createError(
+            404,
+            `Unable to load object for activity at ${activity.object}`
+          )
+        }
 
         const object = await response.json()
         // We check that the activity actor is set elsewhere
         await this.storeObject(fromActor, object, activity.actor as string)
       } else if (typeof activity.object === 'object') {
         // TODO: Account for arrays
-        await this.storeObject(fromActor, activity.object as APObject, activity.actor as string)
+        await this.storeObject(
+          fromActor,
+          activity.object as APObject,
+          activity.actor as string
+        )
       } else {
         throw new Error(`Unable to load activity object for ${activityId}.`)
       }
@@ -432,18 +628,39 @@ export default class ActivityPubSystem {
     }
 
     if (activity.actor !== undefined && typeof activity.actor === 'string') {
-      const interactedActorMention = await this.actorToMention(activity.actor, fromActor)
+      const interactedActorMention = await this.actorToMention(
+        activity.actor,
+        fromActor
+      )
       await actorStore.interacted.add([interactedActorMention])
     }
   }
 
-  async storeObject (fromActor: string, object: APObject, attributedTo: string = ''): Promise<void> {
-    if ((attributedTo.length !== 0) && (object.attributedTo !== attributedTo)) {
+  async storeObject (
+    fromActor: string,
+    object: APObject,
+    attributedTo: string = ''
+  ): Promise<void> {
+    if (attributedTo.length !== 0 && object.attributedTo !== attributedTo) {
       // TODO Shuld this be a different error? Should we just skip?
-      throw createError(419, `Unexpected author for object in activity. Expected ${attributedTo}, got ${object.attributedTo as string}. In object at ${object.id as string}`)
+      throw createError(
+        419,
+        `Unexpected author for object in activity. Expected ${attributedTo}, got ${object.attributedTo as string}. In object at ${object.id as string}`
+      )
     }
     const actorStore = this.store.forActor(fromActor)
     await actorStore.inboxObjects.add(object)
+  }
+
+  async backfillOutbox (fromActor: string, toActor: string): Promise<void> {
+    const actorURL = await this.mentionToActor(fromActor)
+    const actor = await this.getActor(actorURL, fromActor)
+
+    const { outbox, id } = actor
+
+    for await (const activity of this.iterateCollection(fromActor, outbox)) {
+      await this.sendTo(id as string, fromActor, activity)
+    }
   }
 
   async rejectActivity (fromActor: string, activityId: string): Promise<void> {
@@ -462,33 +679,43 @@ export default class ActivityPubSystem {
     await this.hookSystem.dispatchOnRejected(fromActor, activity)
   }
 
-  async notifyFollowers (fromActor: string, activity: APActivity): Promise<void> {
+  async notifyFollowers (
+    fromActor: string,
+    activity: APActivity
+  ): Promise<void> {
     // get followers list from store
     const followers = await this.store.forActor(fromActor).followers.list()
     // loop through each
-    await Promise.all(followers.map(async (mention) => {
-      try {
-        const actorURL = await this.mentionToActor(mention)
-        return await this.sendTo(actorURL, fromActor, activity)
-      } catch (e) {
-        // TODO: Remove deleted accounts
-        this.log.error({ actor: fromActor }, 'Unable to notify actor')
-      }
-    }))
+    await Promise.all(
+      followers.map(async (mention) => {
+        try {
+          const actorURL = await this.mentionToActor(mention)
+          return await this.sendTo(actorURL, fromActor, activity)
+        } catch (e) {
+          // TODO: Remove deleted accounts
+          this.log.error({ actor: fromActor }, 'Unable to notify actor')
+        }
+      })
+    )
   }
 
-  async notifyInteracted (fromActor: string, activity: APActivity): Promise<void> {
+  async notifyInteracted (
+    fromActor: string,
+    activity: APActivity
+  ): Promise<void> {
     const interacted = await this.store.forActor(fromActor).interacted.list()
     // loop through each
-    await Promise.all(interacted.map(async (mention) => {
-      try {
-        const actorURL = await this.mentionToActor(mention)
-        return await this.sendTo(actorURL, fromActor, activity)
-      } catch (e) {
-        // TODO: Remove deleted accounts?
-        this.log.error({ actor: fromActor }, 'Unable to notify actor')
-      }
-    }))
+    await Promise.all(
+      interacted.map(async (mention) => {
+        try {
+          const actorURL = await this.mentionToActor(mention)
+          return await this.sendTo(actorURL, fromActor, activity)
+        } catch (e) {
+          // TODO: Remove deleted accounts?
+          this.log.error({ actor: fromActor }, 'Unable to notify actor')
+        }
+      })
+    )
   }
 
   async performUndo (fromActor: string, activity: APActivity): Promise<void> {
@@ -510,7 +737,10 @@ export default class ActivityPubSystem {
     // This throws if we haven't seen this activity before
     const existing = await inbox.get(object)
     if (existing.actor !== actor) {
-      throw createError(400, 'Undo can only point to activities by same author')
+      throw createError(
+        400,
+        'Undo can only point to activities by same author'
+      )
     }
     await inbox.remove(object)
     await this.hookSystem.dispatchOnApproved(fromActor, activity)
@@ -522,11 +752,17 @@ export default class ActivityPubSystem {
     }
   }
 
-  async removeFollower (fromActor: string, followerMention: string): Promise<void> {
+  async removeFollower (
+    fromActor: string,
+    followerMention: string
+  ): Promise<void> {
     await this.store.forActor(fromActor).followers.remove([followerMention])
   }
 
-  async acceptFollow (fromActor: string, followActivity: APActivity): Promise<void> {
+  async acceptFollow (
+    fromActor: string,
+    followActivity: APActivity
+  ): Promise<void> {
     const fromActorURL = await this.mentionToActor(fromActor)
     const followerURL = followActivity.actor as string
     const id = this.makeURL(`/v1/${fromActor}/outbox/${nanoid()}`)
@@ -547,9 +783,19 @@ export default class ActivityPubSystem {
     const webmention = await this.actorToMention(followerURL, fromActor)
 
     await this.store.forActor(fromActor).followers.add([webmention])
+
+    this.backfillOutbox(fromActor, webmention).catch((e) => {
+      this.log.error(
+        { error: e, fromActor, toActor: webmention },
+        'Unable to backfill follower'
+      )
+    })
   }
 
-  async rejectFollow (fromActor: string, followActivity: APActivity): Promise<void> {
+  async rejectFollow (
+    fromActor: string,
+    followActivity: APActivity
+  ): Promise<void> {
     const fromActorURL = await this.mentionToActor(fromActor)
     const followerURL = followActivity.actor as string
     const id = this.makeURL(`/v1/${fromActor}/outbox/${nanoid()}`)
@@ -567,9 +813,17 @@ export default class ActivityPubSystem {
     await this.sendTo(followerURL, fromActor, response)
   }
 
-  async repliesCollection (fromActor: string, inReplyTo: string, to?: string): Promise<APCollection> {
-    const items = await this.store.forActor(fromActor).inboxObjects.list({ inReplyTo, to })
-    const id = this.makeURL(`/v1/${fromActor}/inbox/replies/${btoa(inReplyTo)}`)
+  async repliesCollection (
+    fromActor: string,
+    inReplyTo: string,
+    to?: string
+  ): Promise<APCollection> {
+    const items = await this.store
+      .forActor(fromActor)
+      .inboxObjects.list({ inReplyTo, to })
+    const id = this.makeURL(
+      `/v1/${fromActor}/inbox/replies/${btoa(inReplyTo)}`
+    )
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -581,8 +835,13 @@ export default class ActivityPubSystem {
   }
 
   // TODO: paging?
-  async likesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
-    const activities = await this.store.forActor(fromActor)
+  async likesCollection (
+    fromActor: string,
+    object: string,
+    countOnly: boolean = false
+  ): Promise<APCollection> {
+    const activities = await this.store
+      .forActor(fromActor)
       .inbox.list({ limit: Infinity, type: 'Like', object })
     const id = this.makeURL(`/v1/${fromActor}/inbox/likes/${btoa(object)}`)
 
@@ -598,8 +857,13 @@ export default class ActivityPubSystem {
   }
 
   // TODO: paging?
-  async sharesCollection (fromActor: string, object: string, countOnly: boolean = false): Promise<APCollection> {
-    const activities = await this.store.forActor(fromActor)
+  async sharesCollection (
+    fromActor: string,
+    object: string,
+    countOnly: boolean = false
+  ): Promise<APCollection> {
+    const activities = await this.store
+      .forActor(fromActor)
       .inbox.list({ limit: Infinity, type: 'Announce', object })
     const id = this.makeURL(`/v1/${fromActor}/inbox/shares/${btoa(object)}`)
 
@@ -614,7 +878,10 @@ export default class ActivityPubSystem {
     }
   }
 
-  async followersCollection (fromActor: string, countOnly: boolean = false): Promise<APCollection> {
+  async followersCollection (
+    fromActor: string,
+    countOnly: boolean = false
+  ): Promise<APCollection> {
     const actorStore = this.store.forActor(fromActor)
     const actorURL = await this.mentionToActor(fromActor)
 
@@ -630,18 +897,20 @@ export default class ActivityPubSystem {
 
     const items = countOnly
       ? undefined
-      : (await Promise.all(
-          followers.map(async (mention) => {
-            try {
-              const url = await this.mentionToActor(mention)
-              return url
-            } catch {
-            // If we can't resolve them just don't show them
-              return ''
-            }
-          })
-        // Filter out failed loads
-        )).filter((item) => item.length !== 0)
+      : (
+          await Promise.all(
+            followers.map(async (mention) => {
+              try {
+                const url = await this.mentionToActor(mention)
+                return url
+              } catch {
+              // If we can't resolve them just don't show them
+                return ''
+              }
+            })
+          // Filter out failed loads
+          )
+        ).filter((item) => item.length !== 0)
 
     return {
       '@context': 'https://www.w3.org/ns/activitystreams',
@@ -659,7 +928,12 @@ export default class ActivityPubSystem {
   }
 }
 
-export function makeActivity (type: string, id: string, actor: string, object: any): APActivity {
+export function makeActivity (
+  type: string,
+  id: string,
+  actor: string,
+  object: any
+): APActivity {
   return {
     '@context': 'https://www.w3.org/ns/activitystreams',
     id,
@@ -681,4 +955,44 @@ export function parseMention (mention: string): MentionParts {
   const domain = sections[2]
 
   return { username, domain }
+}
+
+function isOrderedCollection (
+  collection: SomeSortOfCollection
+): collection is APOrderedCollection {
+  return collection.type === 'OrderedCollection'
+}
+
+function isCollection (
+  collection: SomeSortOfCollection
+): collection is APCollection {
+  return collection.type === 'Collection'
+}
+
+function isOrderedCollectionPage (
+  collection: SomeSortOfCollection
+): collection is APOrderedCollectionPage {
+  return collection.type === 'OrderedCollectionPage'
+}
+
+function isCollectionPage (
+  collection: SomeSortOfCollection
+): collection is APCollectionPage {
+  return collection.type === 'CollectionPage'
+}
+
+function collectionItems (collection: SomeSortOfCollection): ObjectField[] {
+  if (isCollection(collection)) {
+    return (collection as APCollection).items ?? []
+  }
+  if (isCollectionPage(collection)) {
+    return (collection as APCollectionPage).items ?? []
+  }
+  if (isOrderedCollection(collection)) {
+    return (collection as APOrderedCollection).orderedItems ?? []
+  }
+  if (isOrderedCollectionPage(collection)) {
+    return (collection as APOrderedCollectionPage).orderedItems ?? []
+  }
+  return []
 }
