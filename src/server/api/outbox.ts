@@ -76,6 +76,6 @@ export const outboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPub
 
     const activity = await apsystem.getOutboxItem(actor, id)
 
-    return await reply.send(activity)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(activity)
   })
 }
