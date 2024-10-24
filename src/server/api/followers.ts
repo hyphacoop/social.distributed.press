@@ -37,7 +37,7 @@ export const followerRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityP
 
     const collection = await apsystem.followersCollection(actor, !allowed)
 
-    return await reply.send(collection)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(collection)
   })
 
   // Remove a follower (notifying their server), use URL encoded URL of follower Actor
