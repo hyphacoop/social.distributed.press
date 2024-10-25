@@ -16,6 +16,7 @@ import {
 import type Store from './store/index.js'
 import { makeSigner } from '../keypair.js'
 import { Announcements } from './announcements.js'
+import { ActivityStore } from './store/ActivityStore.js'
 
 export const DEFAULT_PUBLIC_KEY_FIELD = 'publicKey'
 
@@ -369,6 +370,22 @@ export default class ActivityPubSystem {
         this.log.warn({ fromActor, activityId, activityActor }, 'Ignoring Delete of unknown actor')
         return
       }
+      // Remove activity from inbox and any other index/collection
+      try {
+        await actorStore.inbox.remove(activityId)
+        this.log.info({ activityId }, 'Deleted activity from inbox')
+
+        // Remove activity from index/collection
+        await actorStore.inbox.removeFromIndex(activityId)
+        this.log.info({ activityId }, 'Deleted activity from index/collection')
+      } catch (e) {
+        this.log.error({ e, activityId }, 'Error while deleting activity')
+        throw createError(500, `Error deleting activity ${activityId} `, {e})
+      }
+
+      // Notify CMS that the activity was deleted 
+      await this.hookSystem.dispatchOnApproved(fromActor, activity)
+      return
     }
     await actorStore.inbox.add(activity)
 
