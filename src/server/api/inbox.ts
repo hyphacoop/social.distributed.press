@@ -51,7 +51,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
         id: `${cfg.publicURL}${request.url}`,
         first: `${cfg.publicURL}/v1/${actor}/inbox?limit=100`
       }
-      return await reply.send(inbox)
+      return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(inbox)
     }
     skip ??= 0
 
@@ -68,7 +68,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
       next,
       orderedItems
     }
-    return await reply.send(orderedCollectionPage)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(orderedCollectionPage)
   })
 
   // This is what instances will POST to in order to notify of follows/replies/etc
@@ -145,7 +145,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const collection = await apsystem.repliesCollection(actor, replyURL, to)
 
-    return await reply.send(collection)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(collection)
   })
 
   // TODO: Paging?
@@ -179,7 +179,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const collection = await apsystem.likesCollection(actor, objectURL, !allowed)
 
-    return await reply.send(collection)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(collection)
   })
 
   // TODO: Paging?
@@ -213,7 +213,7 @@ export const inboxRoutes = (cfg: APIConfig, store: Store, apsystem: ActivityPubS
 
     const collection = await apsystem.sharesCollection(actor, objectURL, !allowed)
 
-    return await reply.send(collection)
+    return await reply.headers({ 'Content-Type': 'application/activity+json' }).send(collection)
   })
   // Deny a follow request/boost/etc
   // The ID is the URL encoded id from the inbox activity
