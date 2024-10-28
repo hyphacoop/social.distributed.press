@@ -12,7 +12,7 @@ import { MockFetch } from './fixtures/mockFetch.js'
 import { generateKeypair } from 'http-signed-fetch'
 
 // Helper function to create a new Store instance
-function newStore (): Store {
+function newStore(): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
@@ -34,7 +34,7 @@ const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit
 }
 const mockHooks = new HookSystem(mockStore, mockFetch)
 
-function noop (): void {
+function noop(): void {
 }
 const mockLog = {
   info: noop,
@@ -482,6 +482,83 @@ test('ActivityPubSystem - Interacted store', async t => {
     const { username, domain } = parseMention(actorMention)
     t.assert(mockFetch.history.includes(`https://${domain}/actor/${username}/inbox`))
   }
+})
+
+test('ActivityPubSystem - Backfill Inbox', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    mockModCheck,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const object = 'https://example.com/note1'
+  const authorMention = '@author@example.com'
+
+  const authorUrl = mockFetch.mockActor(authorMention)
+  // required for signed fetch
+  await store.forActor(authorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl: authorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  const note = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Note',
+    published: new Date().toISOString(),
+    content: 'Hello world',
+    to: [
+      'https://example.com/author/followers'
+    ],
+    cc: [
+      'https://www.w3.org/ns/activitystreams#Public'
+    ],
+    id: object,
+    attributedTo: authorUrl
+  }
+
+  const activity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Create',
+    published: new Date().toISOString(),
+    actor: authorUrl,
+    object: note,
+    id: 'https://example.com/activity1'
+  }
+
+  mockFetch.mockOutbox(authorMention, [activity])
+
+  const followerMention = '@example2@example.com'
+  const followerURL = mockFetch.mockActor(followerMention)
+  const followRequest: APActivity = {
+    id: 'https://example.com/follow',
+    type: 'Follow',
+    actor: followerURL,
+    object: authorUrl
+  }
+  mockFetch.addAPObject(followRequest)
+
+  const followerInbox = `${followerURL}inbox`
+
+  // mock the inbox
+  mockFetch.set(followerInbox, '')
+
+  await store.forActor(authorMention).inbox.add(followRequest)
+
+  await aps.acceptFollow(authorMention, followRequest)
+
+  t.assert(mockFetch.history.includes(followerInbox), 'data sent to inbox')
+
+  // mock follower actor
+  // make fake follow request in store
+  // accept follow
+  // expect requests for the outbox and notes, expect request in inbox
 })
 
 test('ActivityPubSystem - Handle Delete activity', async t => {

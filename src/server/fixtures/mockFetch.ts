@@ -1,4 +1,5 @@
-import { parseMention } from '../apsystem'
+import { APActivity, APActor, APCollection, APObject } from 'activitypub-types'
+import { parseMention } from '../apsystem.js'
 
 export class MockFetch extends Map<string, BodyInit> {
   history: string[]
@@ -19,6 +20,31 @@ export class MockFetch extends Map<string, BodyInit> {
     this.set(key, JSON.stringify(value))
   }
 
+  addAPObject (object: APObject): void {
+    this.setObject(object.id as string, object)
+  }
+
+  mockOutbox (mention: string, items: APActivity[]): void {
+    const { username, domain } = parseMention(mention)
+    const id = `https://${domain}/actor/${username}/outbox`
+    const totalItems = items.length
+
+    const outbox: APCollection = {
+      '@context': 'https://www.w3.org/ns/activitystreams',
+      type: 'Collection',
+      id,
+      items,
+      totalItems
+    }
+    this.addAPObject(outbox)
+    for (const activity of items) {
+      this.addAPObject(activity)
+      if (activity.object !== undefined) {
+        this.addAPObject(activity.object as APObject)
+      }
+    }
+  }
+
   mockActor (mention: string): string {
     const { username, domain } = parseMention(mention)
     const actorUrl = `https://${domain}/actor/${username}/`
@@ -34,8 +60,7 @@ export class MockFetch extends Map<string, BodyInit> {
       }]
     })
 
-    this.setObject(actorUrl, {
-
+    const actor: APActor = {
       '@context': [
         // TODO: I copied this from Mastodon, is this correct?
         'https://www.w3.org/ns/activitystreams',
@@ -51,8 +76,9 @@ export class MockFetch extends Map<string, BodyInit> {
       followers: `${actorUrl}followers`,
       inbox: `${actorUrl}inbox`,
       outbox: `${actorUrl}outbox`
+    }
 
-    })
+    this.addAPObject(actor)
 
     return actorUrl
   }
