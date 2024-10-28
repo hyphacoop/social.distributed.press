@@ -12,7 +12,7 @@ import { MockFetch } from './fixtures/mockFetch.js'
 import { generateKeypair } from 'http-signed-fetch'
 
 // Helper function to create a new Store instance
-function newStore(): Store {
+function newStore (): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
@@ -34,7 +34,7 @@ const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit
 }
 const mockHooks = new HookSystem(mockStore, mockFetch)
 
-function noop(): void {
+function noop (): void {
 }
 const mockLog = {
   info: noop,
@@ -393,7 +393,6 @@ test('ActivityPubSystem - Undo activity', async t => {
   await t.throwsAsync(async () => {
     return await store.forActor(actorMention).inbox.get(activity.id as string)
   })
-
 })
 
 test('ActivityPubSystem - Interacted store', async t => {
@@ -574,17 +573,17 @@ test('ActivityPubSystem - Handle Delete activity', async t => {
     mockFetch.fetch as FetchLike
   )
 
-  const actorMention = '@user1@example.com';
-  const actorUrl = 'https://example.com/actor/user1';
-  const activityId = 'https://example.com/activity1';
+  const actorMention = '@user1@example.com'
+  const actorUrl = 'https://example.com/actor/user1'
+  const activityId = 'https://example.com/activity1'
 
   await store.forActor(actorMention).setInfo({
     keypair: { ...generateKeypair() },
-    actorUrl: actorUrl,
+    actorUrl,
     publicKeyId: 'testAccount#main-key'
-  });
+  })
 
-  mockFetch.mockActor(actorMention);
+  mockFetch.mockActor(actorMention)
 
   const activity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
@@ -593,8 +592,8 @@ test('ActivityPubSystem - Handle Delete activity', async t => {
     actor: actorUrl,
     object: 'https://example.com/note1',
     id: activityId
-  };
-  await store.forActor(actorMention).inbox.add(activity);
+  }
+  await store.forActor(actorMention).inbox.add(activity)
 
   const deleteActivity: APActivity = {
     '@context': 'https://www.w3.org/ns/activitystreams',
@@ -603,27 +602,27 @@ test('ActivityPubSystem - Handle Delete activity', async t => {
     actor: actorUrl,
     object: activityId,
     id: 'https://example.com/activity2'
-  };
+  }
 
-  await aps.ingestActivity(actorMention, deleteActivity);
+  await aps.ingestActivity(actorMention, deleteActivity)
 
   try {
-    await store.forActor(actorMention).inbox.get(activityId);
-    t.fail('The activity should be deleted from the inbox');
+    await store.forActor(actorMention).inbox.get(activityId)
+    t.fail('The activity should be deleted from the inbox')
   } catch (error) {
     if (error instanceof Error) {
-      t.true(error.message.includes('Activity not found'), 'The activity should be deleted from the inbox');
+      t.true(error.message.includes('Activity not found'), 'The activity should be deleted from the inbox')
     } else {
-      t.fail('Unexpected error type');
+      t.fail('Unexpected error type')
     }
   }
 
-  const storedActivities = await store.forActor(actorMention).inbox.list({ object: activityId });
-  const isActivityPresent = storedActivities.some((a) => a.id === activityId);
-  t.falsy(isActivityPresent, 'The activity should be removed from the index/collection');
+  const storedActivities = await store.forActor(actorMention).inbox.list({ object: activityId })
+  const isActivityPresent = storedActivities.some((a) => a.id === activityId)
+  t.falsy(isActivityPresent, 'The activity should be removed from the index/collection')
 
-  t.assert(mockFetch.history.includes(`https://example.com/actor/user1/inbox`));
-});
+  t.assert(mockFetch.history.includes('https://example.com/actor/user1/inbox'))
+})
 
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
