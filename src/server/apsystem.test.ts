@@ -12,7 +12,7 @@ import { MockFetch } from './fixtures/mockFetch.js'
 import { generateKeypair } from 'http-signed-fetch'
 
 // Helper function to create a new Store instance
-function newStore(): Store {
+function newStore (): Store {
   return new Store(new MemoryLevel({ valueEncoding: 'json' }))
 }
 
@@ -34,7 +34,7 @@ const mockFetch: FetchLike = async (input: RequestInfo | URL, init?: RequestInit
 }
 const mockHooks = new HookSystem(mockStore, mockFetch)
 
-function noop(): void {
+function noop (): void {
 }
 const mockLog = {
   info: noop,
@@ -393,7 +393,6 @@ test('ActivityPubSystem - Undo activity', async t => {
   await t.throwsAsync(async () => {
     return await store.forActor(actorMention).inbox.get(activity.id as string)
   })
-
 })
 
 test('ActivityPubSystem - Interacted store', async t => {
@@ -559,6 +558,70 @@ test('ActivityPubSystem - Backfill Inbox', async t => {
   // make fake follow request in store
   // accept follow
   // expect requests for the outbox and notes, expect request in inbox
+})
+
+test('ActivityPubSystem - Handle Delete activity', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const moderation = new ModerationChecker(store)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    moderation,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const activityId = 'https://example.com/activity1'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Like',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object: 'https://example.com/note1',
+    id: activityId
+  }
+  await store.forActor(actorMention).inbox.add(activity)
+
+  const deleteActivity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Delete',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object: activityId,
+    id: 'https://example.com/activity2'
+  }
+
+  mockFetch.addAPObject(deleteActivity)
+
+  await aps.ingestActivity(actorMention, deleteActivity)
+
+  try {
+    await store.forActor(actorMention).inbox.get(activityId)
+    t.fail('The activity should be deleted from the inbox')
+  } catch (error) {
+    if (error instanceof Error) {
+      t.true(error.message.includes('Activity not found'), 'The activity should be deleted from the inbox')
+    } else {
+      t.fail('Unexpected error type')
+    }
+  }
+
+  const storedActivities = await store.forActor(actorMention).inbox.list({ object: activityId })
+  const isActivityPresent = storedActivities.some((a) => a.id === activityId)
+  t.falsy(isActivityPresent, 'The activity should be removed from the index/collection')
 })
 
 // After all tests, restore all sinon mocks

@@ -534,6 +534,15 @@ export default class ActivityPubSystem {
         )
         return
       }
+      // Remove activity from inbox and any other index/collection
+      if (typeof activity.object !== 'string') {
+        throw createError(400, 'Error deleting activity, must have activity URL in object field')
+      }
+      await actorStore.inbox.remove(activity.object)
+      this.log.info({ activityId }, 'Deleted activity from inbox')
+      // Notify CMS that the activity was deleted
+      await this.hookSystem.dispatchOnApproved(fromActor, activity)
+      return
     }
     await actorStore.inbox.add(activity)
 
