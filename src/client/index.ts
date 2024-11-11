@@ -92,12 +92,12 @@ export class SocialInboxClient {
   }
 
   async getActorInfo (actor: string = this.account): Promise<ActorInfo> {
-    const response = await this.sendRequest(GET, `/${actor}/`)
+    const response = await this.sendRequest(GET, `/${actor}`)
     return await response.json()
   }
 
   async deleteActor (actor: string = this.account): Promise<void> {
-    await this.sendRequest(DELETE, `/${actor}/`)
+    await this.sendRequest(DELETE, `/${actor}`)
   }
 
   async setInfo (info: ActorInfo): Promise<void> {
