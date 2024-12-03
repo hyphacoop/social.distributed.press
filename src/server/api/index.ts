@@ -63,6 +63,8 @@ async function apiBuilder (cfg: APIConfig): Promise<FastifyTypebox> {
 
   const server = fastify({
     logger: cfg.useLogging,
+    // Support large params for base64 object ids
+    maxParamLength: 256,
     trustProxy: true
   }).withTypeProvider<TypeBoxTypeProvider>()
   const store = new Store(db)
