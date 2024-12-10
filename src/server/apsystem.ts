@@ -122,6 +122,11 @@ export default class ActivityPubSystem {
       })
     }
 
+    // Fix for cosocial
+    if (typeof headers.signature === 'string' && headers.signature.includes('hs2019')) {
+      headers.signature = headers.signature.replace('hs2019', 'rsa-sha256')
+    }
+
     const signature = signatureParser.parse({ url, method, headers })
     const { keyId } = signature
 
