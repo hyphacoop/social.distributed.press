@@ -59,10 +59,10 @@ test('Actor Info Management', async t => {
   const mockActorInfo = { name: 'Test Actor', inbox: 'https://test.instance/inbox' }
 
   // Mock Fetch Actor Info
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/`, sinon.match.any).resolves(new Response(JSON.stringify(mockActorInfo)))
+  mockSignedFetch.withArgs(`${instance}/v1/testActor`, sinon.match({ method: 'GET' })).resolves(new Response(JSON.stringify(mockActorInfo)))
 
   // Mock Delete Actor
-  mockSignedFetch.withArgs(`${instance}/v1/testActor/`, sinon.match({ method: 'DELETE' })).resolves(new Response())
+  mockSignedFetch.withArgs(`${instance}/v1/testActor`, sinon.match({ method: 'DELETE' })).resolves(new Response())
 
   const actorInfo = await client.getActorInfo('testActor')
   t.deepEqual(actorInfo, mockActorInfo)
