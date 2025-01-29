@@ -624,6 +624,73 @@ test('ActivityPubSystem - Handle Delete activity', async t => {
   t.falsy(isActivityPresent, 'The activity should be removed from the index/collection')
 })
 
+test('ActivityPubSystem - Handle Delete Tombstone activity', async t => {
+  const store = newStore()
+  const mockFetch = new MockFetch()
+  const hookSystem = new HookSystem(store, mockFetch.fetch as FetchLike)
+  const moderation = new ModerationChecker(store)
+  const aps = new ActivityPubSystem(
+    'http://localhost',
+    store,
+    moderation,
+    hookSystem,
+    mockLog,
+    mockFetch.fetch as FetchLike
+  )
+
+  const actorMention = '@user1@example.com'
+  const activityId = 'https://example.com/activity1'
+
+  const actorUrl = mockFetch.mockActor(actorMention)
+
+  await store.forActor(actorMention).setInfo({
+    keypair: { ...generateKeypair() },
+    actorUrl,
+    publicKeyId: 'testAccount#main-key'
+  })
+
+  const activity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Like',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object: 'https://example.com/note1',
+    id: activityId
+  }
+  await store.forActor(actorMention).inbox.add(activity)
+
+  const deleteActivity: APActivity = {
+    '@context': 'https://www.w3.org/ns/activitystreams',
+    type: 'Delete',
+    published: new Date().toISOString(),
+    actor: actorUrl,
+    object: {
+      id: activityId,
+      type: 'Tombstone'
+    },
+    id: 'https://example.com/activity2'
+  }
+
+  mockFetch.addAPObject(deleteActivity)
+
+  await aps.ingestActivity(actorMention, deleteActivity)
+
+  try {
+    await store.forActor(actorMention).inbox.get(activityId)
+    t.fail('The activity should be deleted from the inbox')
+  } catch (error) {
+    if (error instanceof Error) {
+      t.true(error.message.includes('Activity not found'), 'The activity should be deleted from the inbox')
+    } else {
+      t.fail('Unexpected error type')
+    }
+  }
+
+  const storedActivities = await store.forActor(actorMention).inbox.list({ object: activityId })
+  const isActivityPresent = storedActivities.some((a) => a.id === activityId)
+  t.falsy(isActivityPresent, 'The activity should be removed from the index/collection')
+})
+
 // After all tests, restore all sinon mocks
 test.afterEach(() => {
   // Restore all sinon mocks
